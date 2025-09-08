@@ -12,19 +12,21 @@ interface TranslateCustomerQueryInput {
   query: string;
 }
 
-export async function translateCustomerQuery(input: TranslateCustomerQueryInput): Promise<string> {
-  // 1. Input validation: အကယ်၍ စာသားမပါရင် API မခေါ်တော့ဘူး။
+export async function translateCustomerQuery(input: TranslateCustomerQueryInput): Promise<ReadableStream<Uint8Array>> {
+  // 1. Input validation
   if (!input.query || input.query.trim() === '') {
-    return '';
+    // Return an empty stream if there is no query
+    return new ReadableStream({
+      start(controller) {
+        controller.close();
+      }
+    });
   }
 
-  // 2. Model ကို gemini-2.5-pro သို့ ပြောင်းသုံးကြည့်ပါ။
   const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash", // 
-    // 3. Temperature ကိုလျှော့ချခြင်း
+    model: "gemini-2.5-flash",
     generationConfig: {
       temperature: 0.5,
-      responseMimeType: "application/json", // JSON output အတွက် သတ်မှတ်ခြင်း
     },
     safetySettings: [
         { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -34,7 +36,6 @@ export async function translateCustomerQuery(input: TranslateCustomerQueryInput)
     ],
   });
 
-  // 4. အပေါ်မှာ ပြင်ဆင်ထားတဲ့ Prompt အသစ်ကို အသုံးပြုပါ။
   const prompt = `You are an expert translator specializing in customer service communications for online gaming and betting platforms, fluent in both Burmese and Chinese. Your task is to translate customer queries accurately, maintaining the specific tone and terminology of the industry.
 
     **Instructions:**
@@ -42,7 +43,7 @@ export async function translateCustomerQuery(input: TranslateCustomerQueryInput)
     2.  Translate it to the other language.
     3.  Use the provided glossary for key terms to ensure consistency.
     4.  The translation should be natural and professional, suitable for a customer service context.
-    5.  Return the output as a JSON object with a single key: "translatedText".
+    5.  Return only the translated text, without any additional formatting, labels, or JSON structure.
 
     **Glossary (Terminology):**
     * Turnover / Rollover -> လည်ပတ်ငွေ / 流水
@@ -51,33 +52,42 @@ export async function translateCustomerQuery(input: TranslateCustomerQueryInput)
     * Deposit -> ငွေသွင်းခြင်း / 存款
     * Username -> အကောင့်အမည် / 用户名
     * Promotion -> ပရိုမိုးရှင်း / 优惠活动
-
-    **Examples:**
-    * **Chinese to Burmese:**
-        * Input: "你好，请问我的流水还差多少？"
-        * Output: "မင်္ဂလာပါ၊ ကျွန်ုပ်၏ လည်ပတ်ငွေ ဘယ်လောက် လိုသေးလဲ သိပါရစေ။"
-    * **Burmese to Chinese:**
-        * Input: "ပရိုမိုးရှင်း အသေးစိတ်ကို ဘယ်မှာကြည့်လို့ရမလဲဗျ။"
-        * Output: "你好，请问在哪里可以查看优惠活动的详情？"
+    * Brother -> အကို /  哥 / 大哥
 
     **User Query:**
     "${input.query}"
 
-    **JSON Output:**
+    **Translated Text Output:**
   `;
 
   try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const jsonText = response.text();
-    
-    // 5. JSON ကို parse လုပ်ပြီး ترجمه ကို ထုတ်ယူခြင်း
-    const parsedResult = JSON.parse(jsonText);
-    return parsedResult.translatedText || "Translation not available.";
+    const result = await model.generateContentStream(prompt);
+
+    // Create a new ReadableStream to send to the client
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        for await (const chunk of result.stream) {
+          const text = chunk.text();
+          if (text) {
+            controller.enqueue(encoder.encode(text));
+          }
+        }
+        controller.close();
+      },
+    });
+
+    return stream;
 
   } catch (e) {
     console.error("AI Translation Error:", e);
-    // User ကို ပြမယ့် error message ကို ပိုပြီး အဆင်ပြေအောင်ပြင်ပါ။
-    return "Error: Unable to translate at the moment.";
+    // Return a stream with an error message
+    return new ReadableStream({
+      start(controller) {
+        const encoder = new TextEncoder();
+        controller.enqueue(encoder.encode("Error: Unable to translate at the moment."));
+        controller.close();
+      }
+    });
   }
 }

@@ -1,25 +1,20 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
+import { useState, useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Loader2, Languages } from "lucide-react";
-import { translateCustomerQuery } from "@/ai/translate";
-import { CopyButton } from "./copy-button";
-import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
-import { AlertCircle } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2, Languages, AlertCircle } from "lucide-react";
 import { LottieLoader } from "./lottie-loader";
+import { CopyButton } from "./copy-button";
+import { translateCustomerQuery } from "@/ai/translate";
 import { getAnonymousUser } from "@/lib/auth";
 import { saveTranslationHistory, findTranslationInHistory } from "@/lib/database";
 
 const COOLDOWN_SECONDS = 15;
+const MotionButton = motion(Button);
 
 export function Translator() {
   const [inputText, setInputText] = useState("");
@@ -28,78 +23,83 @@ export function Translator() {
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [uid, setUid] = useState<string | null>(null);
+  const finalTranslationRef = useRef("");
 
-  // Effect to get anonymous user UID on component mount
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const user = await getAnonymousUser();
-        setUid(user.uid);
-      } catch (e) {
+    getAnonymousUser()
+      .then(user => setUid(user.uid))
+      .catch(e => {
         console.error("Failed to get anonymous user:", e);
         setError("Could not initialize user session. Please refresh the page.");
-      }
-    };
-    fetchUser();
+      });
   }, []);
 
-  // Effect to initialize and manage the cooldown timer
   useEffect(() => {
-    // Check for an existing cooldown in localStorage on initial load
     const cooldownEndTime = localStorage.getItem('cooldownEndTime');
     if (cooldownEndTime) {
       const remainingTime = Math.ceil((parseInt(cooldownEndTime) - Date.now()) / 1000);
-      if (remainingTime > 0) {
-        setCooldown(remainingTime);
-      }
+      if (remainingTime > 0) setCooldown(remainingTime);
     }
-  }, []); // This effect runs only once on mount to initialize
+  }, []);
 
   useEffect(() => {
-    // This effect handles the countdown logic
-    let timer: NodeJS.Timeout;
-    if (cooldown > 0) {
-      timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
-    } else {
-      // Clean up localStorage when cooldown finishes
+    if (cooldown <= 0) {
       localStorage.removeItem('cooldownEndTime');
+      return;
     }
+    const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
     return () => clearTimeout(timer);
   }, [cooldown]);
 
-
   const handleTranslate = async () => {
     const trimmedInput = inputText.trim();
-    if (!trimmedInput || cooldown > 0 || !uid) {
-        if (!uid) {
-            setError("User session not ready. Please wait a moment and try again.");
-        }
-        return;
-    }
+    if (!trimmedInput || isLoading || cooldown > 0 || !uid) return;
 
     setIsLoading(true);
     setError("");
     setTranslation("");
+    finalTranslationRef.current = "";
+
+    const typeChunkWithDelay = (chunk: string) => {
+      return new Promise<void>(resolve => {
+        const segmenter = new Intl.Segmenter('my', { granularity: 'grapheme' });
+        const graphemes = Array.from(segmenter.segment(chunk)).map(s => s.segment);
+        let i = 0;
+        function type() {
+          if (i < graphemes.length) {
+            const char = graphemes[i];
+            setTranslation(prev => prev + char);
+            finalTranslationRef.current += char;
+            i++;
+            setTimeout(type, 20);
+          } else {
+            resolve();
+          }
+        }
+        type();
+      });
+    };
 
     try {
       const cachedTranslation = await findTranslationInHistory(uid, trimmedInput);
-
       if (cachedTranslation) {
-        setTranslation(cachedTranslation);
+        await typeChunkWithDelay(cachedTranslation);
       } else {
-        const translationResult = await translateCustomerQuery({
-          query: trimmedInput,
-        });
+        const stream = await translateCustomerQuery({ query: trimmedInput });
+        const reader = stream.getReader();
+        const decoder = new TextDecoder();
 
-        if (translationResult) {
-          setTranslation(translationResult);
-          await saveTranslationHistory(uid, trimmedInput, translationResult);
-          
-          // Set cooldown state and save the end time to localStorage
-          const endTime = Date.now() + COOLDOWN_SECONDS * 1000;
-          localStorage.setItem('cooldownEndTime', endTime.toString());
-          setCooldown(COOLDOWN_SECONDS); // This will trigger the countdown effect
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          const decodedChunk = decoder.decode(value, { stream: true });
+          await typeChunkWithDelay(decodedChunk);
         }
+
+        await saveTranslationHistory(uid, trimmedInput, finalTranslationRef.current);
+        const endTime = Date.now() + COOLDOWN_SECONDS * 1000;
+        localStorage.setItem('cooldownEndTime', endTime.toString());
+        setCooldown(COOLDOWN_SECONDS);
       }
     } catch (e) {
       setError("Failed to get translation. Please try again.");
@@ -110,93 +110,65 @@ export function Translator() {
   };
 
   const isTranslateDisabled = isLoading || !inputText.trim() || cooldown > 0;
-  const placeholder = "ဘာသာပြန်ရန် စာသားရိုက်ထည့်ပါ";
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-headline text-3xl">
-          Live Translator
-        </CardTitle>
-        <CardDescription>
-          Enter text to automatically detect the language and translate.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 items-start gap-4">
-          {/* Source Language Column */}
-          <div className="flex flex-col gap-2">
-            <div className="text-center font-semibold text-card-foreground p-2 rounded-md border bg-muted">
-              Enter Burmese or Chinese
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <Card className="glass-card">
+        <CardHeader>
+          <CardTitle className="font-headline text-3xl">Live Translator V2.1</CardTitle>
+          <CardDescription>Streaming translation with history-based caching.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 items-start gap-4">
+            <div className="flex flex-col gap-2">
+              <div className="text-center font-semibold p-2 rounded-md border bg-muted">Enter Burmese or Chinese</div>
+              <Textarea
+                id="input-text"
+                placeholder="ဘာသာပြန်ရန် စာသားရိုက်ထည့်ပါ"
+                value={inputText}
+                onChange={e => setInputText(e.target.value)}
+                rows={6}
+                className="text-base bg-transparent"
+                maxLength={250}
+              />
+              <p className="text-xs text-muted-foreground text-right pr-1">{inputText.length} / 250</p>
             </div>
-            <Textarea
-              id="input-text"
-              name="input-text"
-              placeholder={placeholder}
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              rows={6}
-              className="text-base"
-              maxLength={250}
-            />
-            <p className="text-xs text-muted-foreground text-right pr-1">
-              {inputText.length} / 250
-            </p>
-          </div>
-
-          {/* Target Language Column */}
-          <div className="flex flex-col gap-2 md:pt-0">
-             <div className="text-center font-semibold text-card-foreground p-2 rounded-md border bg-muted">
-              Translation
-            </div>
-            <div className="relative w-full">
-              {isLoading ? (
+            <div className="flex flex-col gap-2">
+              <div className="text-center font-semibold p-2 rounded-md border bg-muted">Translation</div>
+              {isLoading && !translation ? (
                 <div className="flex items-center justify-center rounded-md bg-muted border h-[110px]">
                   <LottieLoader />
                 </div>
               ) : (
-                <Textarea
-                  id="translation-output"
-                  name="translation-output"
-                  placeholder=""
-                  value={translation}
-                  readOnly
-                  rows={6}
-                  className="text-base bg-muted"
-                />
+                <div className="w-full rounded-md bg-muted p-3 text-base h-[110px] overflow-hidden leading-relaxed whitespace-pre-wrap">
+                  {translation}
+                </div>
               )}
-              {translation && !isLoading && (
-                 <div className="absolute bottom-2 right-2">
-                   <CopyButton textToCopy={translation} />
-                 </div>
-              )}
+              <div className="h-6 text-right">
+                {translation && !isLoading && <CopyButton textToCopy={finalTranslationRef.current} />}
+              </div>
             </div>
-             <p className="text-xs text-muted-foreground text-right pr-1 h-4"></p> {/* Spacer */}
           </div>
-        </div>
-
-        {error && (
+          {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-
-        <Button onClick={handleTranslate} disabled={isTranslateDisabled} className="w-full">
-          {isLoading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : cooldown > 0 ? (
-            <span>Try again in {cooldown}s</span>
-          ) : (
-            <Languages className="mr-2 h-4 w-4" />
-          )}
-          {cooldown === 0 && 'Translate'}
-        </Button>
-         <p className="text-xs text-muted-foreground pt-2 text-center opacity-70">
-            AI နဲ့ ဘာသာပြန်ထားတာဖြစ်လို့ အဓိပ္ပာယ် အနည်းငယ် ကွဲလွဲမှု ရှိနိုင်ပါသည်
-          </p>
-      </CardContent>
-    </Card>
+          <MotionButton
+            onClick={handleTranslate}
+            disabled={isTranslateDisabled}
+            className="w-full"
+            whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.03 }}
+            transition={{ type: "spring", stiffness: 400, damping: 15 }}
+          >
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : cooldown > 0 ? <span>Try again in {cooldown}s</span> : <Languages className="mr-2 h-4 w-4" />}
+            {cooldown === 0 && 'Translate'}
+          </MotionButton>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
