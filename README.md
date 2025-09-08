@@ -10,7 +10,7 @@ An advanced, real-time translation web application featuring a modern glassmorph
 
 ---
 
-![Live Translator V2 Demo](https://mm-cn.vercel.app/)
+🌐[View Live Demo](https://mm-cn.vercel.app/)
 
 ---
 
