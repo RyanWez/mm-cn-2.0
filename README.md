@@ -10,8 +10,7 @@ An advanced, real-time translation web application featuring a modern glassmorph
 
 ---
 
-### ✨ **[Insert a GIF of the app in action here!]** ✨
-*(Recommendation: Record a short GIF showcasing the glassmorphism UI, the streaming typewriter effect for both a new translation and a cached one. This is the best way to showcase the project.)*
+![Live Translator V2 Demo](https://mm-cn.vercel.app/)
 
 ---
 
