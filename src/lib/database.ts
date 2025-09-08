@@ -1,4 +1,4 @@
-import { firestore } from './firebase';
+import { firestore } from "./firebase";
 import {
   collection,
   addDoc,
@@ -8,8 +8,8 @@ import {
   orderBy,
   limit,
   getDocs,
-  DocumentReference
-} from 'firebase/firestore';
+  DocumentReference,
+} from "firebase/firestore";
 
 interface TranslationRecord {
   originalText: string;
@@ -29,8 +29,13 @@ export const findTranslationInHistory = async (
 ): Promise<string | null> => {
   if (!uid) return null;
 
-  const historyCollectionRef = collection(firestore, 'translations', uid, 'history');
-  
+  const historyCollectionRef = collection(
+    firestore,
+    "translations",
+    uid,
+    "history"
+  );
+
   const q = query(
     historyCollectionRef,
     where("originalText", "==", originalText),
@@ -56,7 +61,6 @@ export const findTranslationInHistory = async (
   }
 };
 
-
 /**
  * Saves a translation record to a user's specific history collection in Firestore.
  * @param uid - The user's unique ID (from Firebase Auth).
@@ -74,7 +78,12 @@ export const saveTranslationHistory = (
   }
 
   // Create a reference to the user's specific history subcollection
-  const historyCollectionRef = collection(firestore, 'translations', uid, 'history');
+  const historyCollectionRef = collection(
+    firestore,
+    "translations",
+    uid,
+    "history"
+  );
 
   const newRecord: TranslationRecord = {
     originalText,

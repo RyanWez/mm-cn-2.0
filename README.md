@@ -20,7 +20,7 @@ This project has been significantly upgraded with a focus on modern aesthetics a
 
 - **Real-time Streaming Translation**: Utilizes Google Gemini's streaming capabilities to display translations as they are generated, creating a live typewriter effect.
 - **Intelligent Caching**: All translations are saved to a user-specific history in Firestore. Before calling the AI, the app first checks for a cached result to reduce API calls and improve response time.
-- **Seamless User Authentication**: Leverages Firebase Anonymous Authentication to provide each user with a unique, persistent identity without requiring a traditional login. 
+- **Seamless User Authentication**: Leverages Firebase Anonymous Authentication to provide each user with a unique, persistent identity without requiring a traditional login.
 - **Modern Glassmorphism UI**: A complete UI overhaul featuring a blurred, transparent glass-like card effect, enhanced with subtle gradients and shadows.
 - **Dynamic Animations**: Built with `framer-motion` to provide fluid and satisfying micro-interactions, including component fade-ins, button effects, and the text reveal animations.
 - **Persistent Cooldown Timer**: A 15-second cooldown between new AI translations is enforced and persists across page reloads using `localStorage`.
@@ -46,7 +46,7 @@ Follow these instructions to get a local copy up and running.
 This project requires a Firebase project to handle authentication and the database.
 
 1.  Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
-2.  **Enable Authentication**: 
+2.  **Enable Authentication**:
     - In your project, go to the **Authentication** section.
     - Click the **Sign-in method** tab.
     - Select **Anonymous** from the provider list and **Enable** it.
@@ -64,7 +64,7 @@ This project requires a Firebase project to handle authentication and the databa
         }
       }
       ```
-4.  **Get Web App Config**: 
+4.  **Get Web App Config**:
     - Go to **Project Settings** (the gear icon).
     - In the **General** tab, scroll down to "Your apps".
     - Click the **Web** icon (`</>`) to create a new web app.
@@ -75,12 +75,14 @@ This project requires a Firebase project to handle authentication and the databa
 - **Prerequisites**: Node.js (v18 or later recommended)
 
 1.  **Clone the repository:**
+
     ```bash
     git clone https://github.com/RyanWez/Live-Translator.git
     cd Live-Translator
     ```
 
 2.  **Install dependencies:**
+
     ```bash
     npm install
     ```
@@ -88,7 +90,6 @@ This project requires a Firebase project to handle authentication and the databa
 3.  **Set up environment variables:**
 
     Create a `.env.local` file in the root of the project. You will need two sets of keys:
-
     - **Gemini API Key**: Get this from [Google AI Studio](https://aistudio.google.com/app/apikey).
     - **Firebase Config Keys**: Get these from the Firebase project setup (Step 1.4).
 

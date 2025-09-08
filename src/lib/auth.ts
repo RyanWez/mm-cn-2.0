@@ -1,6 +1,5 @@
-
-import { auth } from './firebase';
-import { signInAnonymously, onAuthStateChanged, User } from 'firebase/auth';
+import { auth } from "./firebase";
+import { signInAnonymously, onAuthStateChanged, User } from "firebase/auth";
 
 // This function gets the current user, signing them in anonymously if needed.
 export const getAnonymousUser = (): Promise<User> => {

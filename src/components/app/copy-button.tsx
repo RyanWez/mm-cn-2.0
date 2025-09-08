@@ -49,14 +49,13 @@ export function CopyButton({ textToCopy }: CopyButtonProps) {
     );
   };
 
-
   return (
     <Button
       variant="outline"
       size="sm"
       onClick={handleCopy}
       className={cn(
-        "w-24 transition-all shrink-0",
+        "w-24 shrink-0 transition-all",
         isCopied
           ? "bg-secondary text-secondary-foreground"
           : "hover:bg-accent hover:text-accent-foreground"

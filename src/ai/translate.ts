@@ -1,6 +1,10 @@
-'use server';
+"use server";
 
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+import {
+  GoogleGenerativeAI,
+  HarmCategory,
+  HarmBlockThreshold,
+} from "@google/generative-ai";
 
 if (!process.env.GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY is not set in environment variables");
@@ -12,14 +16,16 @@ interface TranslateCustomerQueryInput {
   query: string;
 }
 
-export async function translateCustomerQuery(input: TranslateCustomerQueryInput): Promise<ReadableStream<Uint8Array>> {
+export async function translateCustomerQuery(
+  input: TranslateCustomerQueryInput
+): Promise<ReadableStream<Uint8Array>> {
   // 1. Input validation
-  if (!input.query || input.query.trim() === '') {
+  if (!input.query || input.query.trim() === "") {
     // Return an empty stream if there is no query
     return new ReadableStream({
       start(controller) {
         controller.close();
-      }
+      },
     });
   }
 
@@ -29,10 +35,22 @@ export async function translateCustomerQuery(input: TranslateCustomerQueryInput)
       temperature: 0.5,
     },
     safetySettings: [
-        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      {
+        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+        threshold: HarmBlockThreshold.BLOCK_NONE,
+      },
+      {
+        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+        threshold: HarmBlockThreshold.BLOCK_NONE,
+      },
+      {
+        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+        threshold: HarmBlockThreshold.BLOCK_NONE,
+      },
+      {
+        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+        threshold: HarmBlockThreshold.BLOCK_NONE,
+      },
     ],
   });
 
@@ -78,16 +96,17 @@ export async function translateCustomerQuery(input: TranslateCustomerQueryInput)
     });
 
     return stream;
-
   } catch (e) {
     console.error("AI Translation Error:", e);
     // Return a stream with an error message
     return new ReadableStream({
       start(controller) {
         const encoder = new TextEncoder();
-        controller.enqueue(encoder.encode("Error: Unable to translate at the moment."));
+        controller.enqueue(
+          encoder.encode("Error: Unable to translate at the moment.")
+        );
         controller.close();
-      }
+      },
     });
   }
 }
