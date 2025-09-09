@@ -5,15 +5,49 @@ import {
   HarmCategory,
   HarmBlockThreshold,
 } from "@google/generative-ai";
+import { firestoreAdmin } from "@/lib/firebase-admin";
+import * as admin from "firebase-admin";
 
 if (!process.env.GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY is not set in environment variables");
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const cacheCollection = firestoreAdmin.collection("translations_cache");
 
 interface TranslateCustomerQueryInput {
   query: string;
+}
+
+// Helper to create a stream from a string
+function streamFromString(text: string): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(text));
+      controller.close();
+    },
+  });
+}
+
+// Function to create ReadableStream from AsyncGenerator
+function createReadableStreamFromAsyncGenerator(
+  generator: AsyncGenerator<any, void, undefined>
+): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of generator) {
+          const text = chunk.text();
+          controller.enqueue(encoder.encode(text));
+        }
+        controller.close();
+      } catch (error) {
+        controller.error(error);
+      }
+    },
+  });
 }
 
 export async function translateCustomerQuery(
@@ -21,7 +55,6 @@ export async function translateCustomerQuery(
 ): Promise<ReadableStream<Uint8Array>> {
   // 1. Input validation
   if (!input.query || input.query.trim() === "") {
-    // Return an empty stream if there is no query
     return new ReadableStream({
       start(controller) {
         controller.close();
@@ -29,32 +62,49 @@ export async function translateCustomerQuery(
     });
   }
 
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
-    generationConfig: {
-      temperature: 0.5,
-    },
-    safetySettings: [
-      {
-        category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-      },
-      {
-        category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-      },
-      {
-        category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-      },
-      {
-        category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-        threshold: HarmBlockThreshold.BLOCK_NONE,
-      },
-    ],
-  });
+  const sourceText = input.query.trim();
 
-  const prompt = `You are an expert translator specializing in customer service communications for online gaming and betting platforms, fluent in both Burmese and Chinese. Your task is to translate customer queries accurately, maintaining the specific tone and terminology of the industry.
+  try {
+    // 2. Check cache first
+    const querySnapshot = await cacheCollection
+      .where("sourceText", "==", sourceText)
+      .get();
+
+    if (!querySnapshot.empty) {
+      const cachedDoc = querySnapshot.docs[0];
+      const cachedTranslation = cachedDoc.data().translatedText;
+      console.log("Cache hit for:", sourceText);
+      return streamFromString(cachedTranslation);
+    }
+
+    console.log("Cache miss for:", sourceText);
+    // 3. If not in cache, call the AI
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash",
+      generationConfig: {
+        temperature: 0.5,
+      },
+      safetySettings: [
+        {
+          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+        {
+          category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+          threshold: HarmBlockThreshold.BLOCK_NONE,
+        },
+      ],
+    });
+
+    const prompt = `You are an expert translator specializing in customer service communications for online gaming and betting platforms, fluent in both Burmese and Chinese. Your task is to translate customer queries accurately, maintaining the specific tone and terminology of the industry.
 
     **Instructions:**
     1.  Detect the language of the user's query (Burmese or Chinese).
@@ -73,40 +123,41 @@ export async function translateCustomerQuery(
     * Brother -> အကို /  哥 / 大哥
 
     **User Query:**
-    "${input.query}"
+    "${sourceText}"
 
     **Translated Text Output:**
   `;
 
-  try {
     const result = await model.generateContentStream(prompt);
 
-    // Create a new ReadableStream to send to the client
-    const stream = new ReadableStream({
-      async start(controller) {
-        const encoder = new TextEncoder();
-        for await (const chunk of result.stream) {
-          const text = chunk.text();
-          if (text) {
-            controller.enqueue(encoder.encode(text));
+    let fullTranslation = "";
+    const transformer = new TransformStream({
+      transform(chunk, controller) {
+        fullTranslation += new TextDecoder().decode(chunk);
+        controller.enqueue(chunk);
+      },
+      async flush(controller) {
+        // 4. After stream is complete, save the full translation to cache
+        if (fullTranslation) {
+          try {
+            await cacheCollection.add({
+              sourceText: sourceText,
+              translatedText: fullTranslation,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            console.log("Saved to cache:", sourceText);
+          } catch (cacheError) {
+            console.error("Failed to save to cache:", cacheError);
           }
         }
-        controller.close();
       },
     });
 
-    return stream;
+    return createReadableStreamFromAsyncGenerator(result.stream).pipeThrough(
+      transformer
+    );
   } catch (e) {
     console.error("AI Translation Error:", e);
-    // Return a stream with an error message
-    return new ReadableStream({
-      start(controller) {
-        const encoder = new TextEncoder();
-        controller.enqueue(
-          encoder.encode("Error: Unable to translate at the moment.")
-        );
-        controller.close();
-      },
-    });
+    return streamFromString("Error: Unable to translate at the moment.");
   }
 }
