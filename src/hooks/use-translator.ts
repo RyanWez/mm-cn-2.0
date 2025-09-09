@@ -17,6 +17,7 @@ export function useTranslator() {
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [uid, setUid] = useState<string | null>(null);
+  const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const finalTranslationRef = useRef("");
 
   useEffect(() => {
@@ -104,6 +105,7 @@ export function useTranslator() {
       // If the translation was successful, display it and start the UI cooldown.
       await typeChunkWithDelay(fullResponse);
       await saveTranslationHistory(uid, trimmedInput, finalTranslationRef.current);
+      setHistoryRefreshTrigger(prev => prev + 1); // Trigger history refresh
       setCooldown(COOLDOWN_SECONDS); // Start client-side cooldown for UI feedback
     } catch (e: any) {
       setError("Failed to get translation. Please try again.");
@@ -115,6 +117,12 @@ export function useTranslator() {
 
   const isTranslateDisabled = isLoading || !inputText.trim() || cooldown > 0;
 
+  const handleSelectFromHistory = (original: string, translated: string) => {
+    setInputText(original);
+    setTranslation(translated);
+    finalTranslationRef.current = translated;
+  };
+
   return {
     inputText,
     setInputText,
@@ -125,5 +133,8 @@ export function useTranslator() {
     handleTranslate,
     isTranslateDisabled,
     finalTranslationRef,
+    uid,
+    historyRefreshTrigger,
+    handleSelectFromHistory,
   };
 }

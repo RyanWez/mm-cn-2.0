@@ -93,3 +93,45 @@ export const saveTranslationHistory = (
 
   return addDoc(historyCollectionRef, newRecord);
 };
+
+/**
+ * Fetches the translation history for a user, ordered by most recent first.
+ * @param uid The user's unique ID.
+ * @param limitCount The maximum number of records to fetch (default: 20).
+ * @returns An array of translation records with timestamps.
+ */
+export const getTranslationHistory = async (
+  uid: string,
+  limitCount: number = 20
+): Promise<Array<TranslationRecord & { id: string; createdAt: Date }>> => {
+  if (!uid) return [];
+
+  const historyCollectionRef = collection(
+    firestore,
+    "translations",
+    uid,
+    "history"
+  );
+
+  const q = query(
+    historyCollectionRef,
+    orderBy("createdAt", "desc"),
+    limit(limitCount)
+  );
+
+  try {
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        originalText: data.originalText,
+        translatedText: data.translatedText,
+        createdAt: data.createdAt?.toDate() || new Date(),
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching translation history:", error);
+    return [];
+  }
+};

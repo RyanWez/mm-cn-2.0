@@ -13,6 +13,7 @@ import { TranslationInput } from "./translator/TranslationInput";
 import { TranslationOutput } from "./translator/TranslationOutput";
 import { TranslateButton } from "./translator/TranslateButton";
 import { ErrorAlert } from "./translator/ErrorAlert";
+import { TranslationHistory } from "./translator/TranslationHistory";
 
 export function Translator() {
   const {
@@ -25,6 +26,9 @@ export function Translator() {
     handleTranslate,
     isTranslateDisabled,
     finalTranslationRef,
+    uid,
+    historyRefreshTrigger,
+    handleSelectFromHistory,
   } = useTranslator();
 
   return (
@@ -66,6 +70,15 @@ export function Translator() {
           />
         </CardContent>
       </Card>
+      
+      {/* Translation History */}
+      <div className="mt-6">
+        <TranslationHistory
+          uid={uid}
+          onSelectTranslation={handleSelectFromHistory}
+          refreshTrigger={historyRefreshTrigger}
+        />
+      </div>
     </motion.div>
   );
 }
