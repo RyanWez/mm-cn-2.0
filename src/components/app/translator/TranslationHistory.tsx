@@ -24,36 +24,47 @@ interface TranslationHistoryProps {
   refreshTrigger?: number;
 }
 
-export function TranslationHistory({ 
-  uid, 
+export function TranslationHistory({
+  uid,
   onSelectTranslation,
-  refreshTrigger = 0 
+  refreshTrigger = 0
 }: TranslationHistoryProps) {
   const [history, setHistory] = useState<TranslationHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
+  
+  const itemsPerPage = 10;
 
-  const fetchHistory = useCallback(async () => {
+  const fetchHistory = useCallback(async (page: number = 1) => {
     if (!uid) return;
     
     setIsLoading(true);
     setError("");
     
     try {
-      const historyData = await getTranslationHistory(uid, 10);
-      setHistory(historyData);
+      // First get total count
+      const allHistory = await getTranslationHistory(uid, 1000); // Get a large number to count
+      setTotalCount(allHistory.length);
+      
+      // Then get paginated data
+      const startIndex = (page - 1) * itemsPerPage;
+      const paginatedHistory = allHistory.slice(startIndex, startIndex + itemsPerPage);
+      setHistory(paginatedHistory);
     } catch (err) {
       setError("Failed to load translation history");
       console.error("Error fetching history:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [uid]);
+  }, [uid, itemsPerPage]);
 
   useEffect(() => {
-    fetchHistory();
-  }, [uid, refreshTrigger, fetchHistory]);
+    fetchHistory(currentPage);
+  }, [uid, refreshTrigger, fetchHistory, currentPage]);
 
   const formatTimeAgo = (date: Date) => {
     const now = new Date();
@@ -75,6 +86,40 @@ export function TranslationHistory({
     return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
   };
 
+  const copyToClipboard = async (text: string, key: string) => {
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for non-secure contexts
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      
+      // Show copied state
+      setCopiedStates(prev => ({ ...prev, [key]: true }));
+      setTimeout(() => {
+        setCopiedStates(prev => ({ ...prev, [key]: false }));
+      }, 2000);
+    } catch (err) {
+      console.error("Failed to copy text:", err);
+    }
+  };
+
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
   if (!uid) return null;
 
   return (
@@ -91,9 +136,9 @@ export function TranslationHistory({
               <CardTitle className="text-lg font-semibold">
                 Translation History
               </CardTitle>
-              {history.length > 0 && (
+              {totalCount > 0 && (
                 <Badge variant="secondary" className="ml-2">
-                  {history.length}
+                  {totalCount}
                 </Badge>
               )}
             </div>
@@ -115,10 +160,15 @@ export function TranslationHistory({
         <AnimatePresence>
           {isExpanded && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              transition={{ duration: 0.3 }}
+              initial={{ height: 0, opacity: 0, y: -10 }}
+              animate={{ height: "auto", opacity: 1, y: 0 }}
+              exit={{ height: 0, opacity: 0, y: -10 }}
+              transition={{
+                duration: 0.4,
+                ease: [0.4, 0.0, 0.2, 1],
+                opacity: { duration: 0.3 },
+                y: { duration: 0.3 }
+              }}
               className="overflow-hidden"
             >
               <CardContent className="pt-0">
@@ -138,82 +188,184 @@ export function TranslationHistory({
                     No translation history yet. Start translating to see your history here!
                   </div>
                 ) : (
-                  <ScrollArea className="h-[300px] pr-4">
-                    <div className="space-y-3">
+                  <ScrollArea className="h-[400px] pr-4">
+                    <motion.div
+                      key={`page-${currentPage}`}
+                      className="space-y-4"
+                      variants={{
+                        hidden: { opacity: 0 },
+                        visible: {
+                          opacity: 1,
+                          transition: {
+                            staggerChildren: 0.05,
+                          },
+                        },
+                      }}
+                      initial="hidden"
+                      animate="visible"
+                    >
                       {history.map((item, index) => (
                         <motion.div
                           key={item.id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.2, delay: index * 0.05 }}
-                          className="group rounded-lg border bg-card p-3 hover:bg-accent/50 transition-colors"
+                          variants={{
+                            hidden: { opacity: 0, y: -15 },
+                            visible: { opacity: 1, y: 0 },
+                          }}
+                          transition={{
+                            duration: 0.3,
+                            ease: "easeOut",
+                          }}
+                          layout
+                          className="group rounded-lg border bg-card p-4 hover:bg-accent/30 transition-all duration-200 shadow-sm hover:shadow-md"
                         >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex-1 min-w-0">
-                              <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                                <div className="space-y-1">
-                                  <div className="text-xs font-medium text-muted-foreground">
-                                    Original
-                                  </div>
-                                  <p className="text-sm leading-relaxed break-words">
-                                    {truncateText(item.originalText, 80)}
-                                  </p>
+                          <div className="space-y-4">
+                            {/* Original Text Section */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                  Original Text
                                 </div>
-                                <div className="space-y-1">
-                                  <div className="text-xs font-medium text-muted-foreground">
-                                    Translation
-                                  </div>
-                                  <p className="text-sm leading-relaxed break-words">
-                                    {truncateText(item.translatedText, 80)}
-                                  </p>
-                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(item.originalText, `${item.id}-original`)}
+                                  className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="Copy original text"
+                                >
+                                  <Copy className="h-3 w-3 mr-1" />
+                                  {copiedStates[`${item.id}-original`] ? "Copied!" : "Copy"}
+                                </Button>
                               </div>
-                              
-                              <div className="flex items-center gap-2 mt-2">
+                              <div className="bg-muted/50 rounded-md p-3 border-l-2 border-primary/20">
+                                <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                                  {item.originalText}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Translation Text Section */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                                  Translation
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(item.translatedText, `${item.id}-translation`)}
+                                  className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                  title="Copy translation"
+                                >
+                                  <Copy className="h-3 w-3 mr-1" />
+                                  {copiedStates[`${item.id}-translation`] ? "Copied!" : "Copy"}
+                                </Button>
+                              </div>
+                              <div className="bg-accent/50 rounded-md p-3 border-l-2 border-secondary/40">
+                                <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                                  {item.translatedText}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Footer with time and actions */}
+                            <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                              <div className="flex items-center gap-2">
                                 <Clock className="h-3 w-3 text-muted-foreground" />
                                 <span className="text-xs text-muted-foreground">
                                   {formatTimeAgo(item.createdAt)}
                                 </span>
                               </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <CopyButton textToCopy={item.translatedText} />
+                              
                               {onSelectTranslation && (
                                 <Button
-                                  variant="ghost"
+                                  variant="outline"
                                   size="sm"
                                   onClick={() => onSelectTranslation(item.originalText, item.translatedText)}
-                                  className="h-8 w-8 p-0"
+                                  className="h-7 px-3 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                                   title="Use this translation"
                                 >
-                                  <Copy className="h-3 w-3" />
+                                  <Copy className="h-3 w-3 mr-1" />
+                                  Use
                                 </Button>
                               )}
                             </div>
                           </div>
                         </motion.div>
                       ))}
-                    </div>
+                    </motion.div>
                   </ScrollArea>
                 )}
                 
-                {history.length > 0 && (
+                {totalCount > 0 && (
                   <>
                     <Separator className="my-3" />
                     <div className="flex justify-between items-center">
                       <p className="text-xs text-muted-foreground">
-                        Showing recent {history.length} translations
+                        Showing page {currentPage} of {totalPages} ({totalCount} total translations)
                       </p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={fetchHistory}
-                        className="text-xs"
-                      >
-                        Refresh
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => fetchHistory(currentPage)}
+                          className="text-xs"
+                        >
+                          Refresh
+                        </Button>
+                      </div>
                     </div>
+                    
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 mt-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          className="h-8 px-3 text-xs"
+                        >
+                          Previous
+                        </Button>
+                        
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                            let pageNum;
+                            if (totalPages <= 5) {
+                              pageNum = i + 1;
+                            } else if (currentPage <= 3) {
+                              pageNum = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              pageNum = totalPages - 4 + i;
+                            } else {
+                              pageNum = currentPage - 2 + i;
+                            }
+                            
+                            return (
+                              <Button
+                                key={pageNum}
+                                variant={currentPage === pageNum ? "default" : "ghost"}
+                                size="sm"
+                                onClick={() => handlePageChange(pageNum)}
+                                className="h-8 w-8 p-0 text-xs"
+                              >
+                                {pageNum}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          className="h-8 px-3 text-xs"
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    )}
                   </>
                 )}
               </CardContent>
