@@ -1,33 +1,62 @@
+"use client";
+
+import { useState } from "react";
 import { Translator } from "@/components/app/translator";
-import { CommonPhrases } from "@/components/app/common-phrases";
-import { Languages } from "lucide-react";
-import { ThemeToggle } from "@/components/app/theme-toggle";
+import { Sidebar } from "@/components/app/sidebar";
+import { Header } from "@/components/app/header";
+import { CategoryPhrases } from "@/components/app/category-phrases";
 
 export default function Home() {
-  return (
-    <div className="flex min-h-screen flex-col items-center justify-start bg-background text-foreground">
-      <header className="container mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-4 md:py-6">
-        <div></div>
-        <ThemeToggle />
-      </header>
-      <main className="container mx-auto max-w-5xl px-4 pb-8 md:pb-12">
-        <div className="mb-12 text-center">
-          <div className="mb-4 inline-flex items-center gap-4">
-            <Languages className="h-10 w-10 text-primary" />
-            <h1 className="font-headline text-4xl font-bold tracking-tight">
-              Myanmar-Chinese Chat Assistant
-            </h1>
-          </div>
-          <p className="text-lg text-muted-foreground">
-            AI-powered translation for customer service chats.
-          </p>
-        </div>
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-        <div className="space-y-12">
-          <Translator />
-          <CommonPhrases />
-        </div>
-      </main>
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+  };
+
+  const handleDashboardClick = () => {
+    setSelectedCategory(null);
+  };
+
+  const handleSidebarToggle = (collapsed: boolean) => {
+    setIsSidebarCollapsed(collapsed);
+  };
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Fixed Left Sidebar */}
+      <Sidebar
+        onCategorySelect={handleCategorySelect}
+        onDashboardClick={handleDashboardClick}
+        selectedCategory={selectedCategory}
+        onToggle={handleSidebarToggle}
+      />
+      
+      {/* Right Content Area with dynamic margin for fixed sidebar */}
+      <div className={`flex flex-col min-h-screen transition-all duration-300 ease-in-out ${
+        isSidebarCollapsed ? 'ml-20' : 'ml-64'
+      }`}>
+        {/* Header */}
+        <Header />
+        
+        {/* Body */}
+        <main className="flex-1 p-6 overflow-auto">
+          <div className="max-w-4xl mx-auto">
+            {selectedCategory ? (
+              <CategoryPhrases selectedCategory={selectedCategory} />
+            ) : (
+              <>
+                <div className="mb-6 text-center">
+                  <p className="text-lg text-muted-foreground">
+                    AI-powered translation for customer service chats.
+                  </p>
+                </div>
+                <Translator />
+              </>
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

@@ -16,7 +16,7 @@
     --secondary-foreground: 224 71.4% 4.1%;
     --muted: 220 14.3% 95.9%;
     --muted-foreground: 220 8.9% 46.1%;
-    --accent: 249 84% 70%;
+    --accent: 203 80% 65%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
@@ -29,32 +29,6 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-  }
-  .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 20% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 20% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 20% 98%;
-    --primary: 215 66% 65%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 215 28% 17%;
-    --secondary-foreground: 210 20% 98%;
-    --muted: 215 28% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 249 84% 70%;
-    --accent-foreground: 222 47% 11%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 85.7% 97.3%;
-    --border: 215 28% 17%;
-    --input: 215 28% 17%;
-    --ring: 215 66% 65%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
   }
 }
 
@@ -85,22 +59,6 @@
     background-attachment: fixed;
   }
 
-  .dark body {
-    background: #0f2027; /* fallback for old browsers */
-    background: -webkit-linear-gradient(
-      to right,
-      #2c5364,
-      #203a43,
-      #0f2027
-    ); /* Chrome 10-25, Safari 5.1-6 */
-    background: linear-gradient(
-      to right,
-      #2c5364,
-      #203a43,
-      #0f2027
-    ); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
-    background-attachment: fixed;
-  }
 }
 
 @layer components {
@@ -115,9 +73,58 @@
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.25);
   }
 
-  .dark .glass-card {
-    background: rgba(40, 48, 64, 0.25) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+@layer components {
+  /* Smooth Transitions and Hovers */
+  .smooth-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-scale {
+    @apply smooth-transition;
+    &:hover {
+      transform: scale(1.02);
+    }
+  }
+
+  .icon-hover {
+    @apply smooth-transition;
+    transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+    &:hover {
+      transform: translateY(-1px) scale(1.05);
+      opacity: 0.8;
+    }
+  }
+
+  .card-hover {
+    @apply smooth-transition;
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+  }
+
+  .fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
+
+  /* No scrollbar utility */
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, and Opera */
+  }

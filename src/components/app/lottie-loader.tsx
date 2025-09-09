@@ -8,7 +8,10 @@ export function LottieLoader() {
     <Lottie
       animationData={animationData}
       loop={true}
+      autoplay={true}
+      renderer="svg"
       style={{ width: 150, height: 150 }}
+      className="smooth-transition"
     />
   );
 }

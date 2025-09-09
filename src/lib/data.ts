@@ -441,7 +441,7 @@ export const commonPhrasesData = [
     ],
   },
   {
-    category: "အကောင့် ချိတ်ဆက်နည်း(ချည်နှောင်နည်း) (如何绑定账户)",
+    category: "အကောင့် ချိတ်ဆက်နည်း",
     translations: [
       {
         burmese: "1.အကောင့်ချည်နှောင်သည်ကိုနိုပ်လိုက်ပါရှင့်အစ်ကို..",
@@ -466,7 +466,7 @@ export const commonPhrasesData = [
     ],
   },
   {
-    category: "အကောင့်ပြောင်း (更换账户)",
+    category: "အကောင့်ပြောင်း(更换账户)",
     translations: [
       {
         burmese: "ကျေးဇူးပြု၍ ညီမပို့ပေးတဲ့အတိုင်းလုပ်ဆောင်ပေးပါရှင့်။",
@@ -483,7 +483,7 @@ export const commonPhrasesData = [
       },
       {
         burmese:
-          "ချိတ်ဆက်ပြီးပါက ချိတ်ဆက်ထားကြောင်း screen shot ပို့ပေးပါရှင့်။",
+          "ချိတ်ဆက်ပြီးပါက ချိတ်ဆက်ထားကြောင်း screenshot ပို့ပေးပါရှင့်။",
         chinese: "绑定后请发送截图证明。",
       },
       {

@@ -12,14 +12,11 @@ import { Card } from "../ui/card";
 
 export function CommonPhrases() {
   return (
-    <div className="space-y-4">
-      <h2 className="font-headline text-3xl font-bold tracking-tight text-foreground">
-        Common Phrases
-      </h2>
+    <div className="space-y-2">
       <Accordion
         type="single"
         collapsible
-        className="w-full space-y-2"
+        className="w-full space-y-1"
         defaultValue={commonPhrasesData[0].category}
       >
         {commonPhrasesData.map((group) => (
