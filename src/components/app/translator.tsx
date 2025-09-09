@@ -36,7 +36,7 @@ export function Translator() {
       <Card className="glass-card">
         <CardHeader>
           <CardTitle className="font-headline text-3xl">
-            Live Translator V2.1
+            Live Translator V2.0
           </CardTitle>
           <CardDescription>
             Streaming translation with history-based caching.
