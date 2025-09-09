@@ -29,7 +29,7 @@ export default function Home() {
         onCategorySelect={handleCategorySelect}
         onDashboardClick={handleDashboardClick}
         selectedCategory={selectedCategory}
-        onToggle={handleSidebarToggle}
+        isCollapsed={isSidebarCollapsed}
       />
       
       {/* Right Content Area with dynamic margin for fixed sidebar */}
@@ -37,7 +37,7 @@ export default function Home() {
         isSidebarCollapsed ? 'ml-20' : 'ml-64'
       }`}>
         {/* Header */}
-        <Header />
+        <Header isCollapsed={isSidebarCollapsed} onToggle={handleSidebarToggle} />
         
         {/* Body */}
         <main className="flex-1 p-6 overflow-auto">
