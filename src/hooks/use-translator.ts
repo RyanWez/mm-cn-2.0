@@ -29,20 +29,7 @@ export function useTranslator() {
   }, []);
 
   useEffect(() => {
-    const cooldownEndTime = localStorage.getItem("cooldownEndTime");
-    if (cooldownEndTime) {
-      const remainingTime = Math.ceil(
-        (parseInt(cooldownEndTime) - Date.now()) / 1000
-      );
-      if (remainingTime > 0) setCooldown(remainingTime);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (cooldown <= 0) {
-      localStorage.removeItem("cooldownEndTime");
-      return;
-    }
+    if (cooldown <= 0) return;
     const timer = setTimeout(() => setCooldown(cooldown - 1), 1000);
     return () => clearTimeout(timer);
   }, [cooldown]);
@@ -79,34 +66,46 @@ export function useTranslator() {
     };
 
     try {
+      // First, check for a cached translation. No cooldown for cache hits.
       const cachedTranslation = await findTranslationInHistory(
         uid,
         trimmedInput
       );
       if (cachedTranslation) {
         await typeChunkWithDelay(cachedTranslation);
-      } else {
-        const stream = await translateCustomerQuery({ query: trimmedInput });
-        const reader = stream.getReader();
-        const decoder = new TextDecoder();
-
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          const decodedChunk = decoder.decode(value, { stream: true });
-          await typeChunkWithDelay(decodedChunk);
-        }
-
-        await saveTranslationHistory(
-          uid,
-          trimmedInput,
-          finalTranslationRef.current
-        );
-        const endTime = Date.now() + COOLDOWN_SECONDS * 1000;
-        localStorage.setItem("cooldownEndTime", endTime.toString());
-        setCooldown(COOLDOWN_SECONDS);
+        return; // Exit early, no API call, no cooldown
       }
-    } catch (e) {
+
+      // If not cached, call the server which enforces its own cooldown.
+      const stream = await translateCustomerQuery({ query: trimmedInput, uid });
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+
+      let fullResponse = "";
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const decodedChunk = decoder.decode(value, { stream: true });
+        fullResponse += decodedChunk;
+      }
+
+      // The server returns an error message in the stream if on cooldown.
+      if (fullResponse.startsWith("Error:")) {
+        const cooldownMessage = fullResponse.replace("Error: ", "");
+        setError(cooldownMessage);
+        // Try to parse the remaining seconds from the message to sync the client timer
+        const match = cooldownMessage.match(/(\d+)/);
+        if (match && match[1]) {
+          setCooldown(parseInt(match[1], 10));
+        }
+        return;
+      }
+
+      // If the translation was successful, display it and start the UI cooldown.
+      await typeChunkWithDelay(fullResponse);
+      await saveTranslationHistory(uid, trimmedInput, finalTranslationRef.current);
+      setCooldown(COOLDOWN_SECONDS); // Start client-side cooldown for UI feedback
+    } catch (e: any) {
       setError("Failed to get translation. Please try again.");
       console.error(e);
     } finally {
