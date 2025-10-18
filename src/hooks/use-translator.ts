@@ -16,6 +16,7 @@ export function useTranslator() {
   const [inputText, setInputText] = useState("");
   const [translation, setTranslation] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [uid, setUid] = useState<string | null>(null);
@@ -45,6 +46,7 @@ export function useTranslator() {
     if (!trimmedInput || isLoading || cooldown > 0 || !uid) return;
 
     setIsLoading(true);
+    setIsStreaming(false);
     setError("");
     setTranslation("");
     finalTranslationRef.current = "";
@@ -75,27 +77,50 @@ export function useTranslator() {
       // First, check for a cached translation
       const cachedTranslation = findTranslationInHistory(trimmedInput);
       if (cachedTranslation) {
+        // Small delay to show thinking indicator briefly
+        await new Promise(resolve => setTimeout(resolve, 300));
+        setIsLoading(false);
+        setIsStreaming(true);
         await typeChunkWithDelay(cachedTranslation);
+        setIsStreaming(false);
         return;
       }
 
-      // If not cached, call the server
+      // If not cached, call the server with streaming
       const stream = await translateCustomerQuery({ query: trimmedInput, uid });
       const reader = stream.getReader();
       const decoder = new TextDecoder();
 
       let fullResponse = "";
+      let firstChunkReceived = false;
+      
       while (true) {
         const { value, done } = await reader.read();
         if (done) break;
+        
         const decodedChunk = decoder.decode(value, { stream: true });
         fullResponse += decodedChunk;
+        
+        // Smooth transition from loading to streaming
+        if (!firstChunkReceived) {
+          firstChunkReceived = true;
+          // Small delay for smooth fade transition
+          await new Promise(resolve => setTimeout(resolve, 200));
+          setIsLoading(false);
+          setIsStreaming(true);
+        }
+        
+        // Stream the text directly to UI
+        setTranslation((prev) => prev + decodedChunk);
+        finalTranslationRef.current += decodedChunk;
       }
 
       // Check for error message
       if (fullResponse.startsWith("Error:")) {
         const cooldownMessage = fullResponse.replace("Error: ", "");
         setError(cooldownMessage);
+        setTranslation("");
+        finalTranslationRef.current = "";
         const match = cooldownMessage.match(/(\d+)/);
         if (match && match[1]) {
           setCooldown(parseInt(match[1], 10));
@@ -103,17 +128,18 @@ export function useTranslator() {
         return;
       }
 
-      // Display translation and save to history
-      await typeChunkWithDelay(fullResponse);
+      // Save to history after streaming completes
       saveTranslationHistory(trimmedInput, finalTranslationRef.current);
       updateCooldown();
       setHistoryRefreshTrigger(prev => prev + 1);
       setCooldown(COOLDOWN_SECONDS);
+      setIsStreaming(false);
     } catch (e: any) {
       setError("Failed to get translation. Please try again.");
       console.error(e);
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
     }
   };
 
@@ -130,6 +156,7 @@ export function useTranslator() {
     setInputText,
     translation,
     isLoading,
+    isStreaming,
     error,
     cooldown,
     handleTranslate,

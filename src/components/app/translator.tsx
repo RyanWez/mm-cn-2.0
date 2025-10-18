@@ -21,6 +21,7 @@ export function Translator() {
     setInputText,
     translation,
     isLoading,
+    isStreaming,
     error,
     cooldown,
     handleTranslate,
@@ -56,10 +57,11 @@ export function Translator() {
             <TranslationOutput
               translation={translation}
               isLoading={isLoading}
+              isStreaming={isStreaming}
               finalTranslation={finalTranslationRef.current}
             />
           </div>
-          
+
           <ErrorAlert message={error} />
 
           <TranslateButton
@@ -70,7 +72,7 @@ export function Translator() {
           />
         </CardContent>
       </Card>
-      
+
       {/* Translation History */}
       <div className="mt-6">
         <TranslationHistory
