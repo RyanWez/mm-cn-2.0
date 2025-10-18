@@ -10,7 +10,7 @@ import {
 } from "@/lib/storage";
 import { translateCustomerQuery } from "@/ai/translate";
 
-const COOLDOWN_SECONDS = 15;
+const COOLDOWN_SECONDS = 5;
 
 export function useTranslator() {
   const [inputText, setInputText] = useState("");

@@ -68,26 +68,28 @@ export function TranslationOutput({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3 }}
-              className="min-h-[150px] max-h-[400px] w-full overflow-y-auto whitespace-pre-wrap p-3 text-base leading-relaxed"
+              className="relative min-h-[150px] max-h-[400px] w-full"
             >
-              {translation}
-              {isStreaming && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: [0, 1, 0] }}
-                  transition={{ duration: 0.8, repeat: Infinity }}
-                  className="inline-block ml-1 w-2 h-4 bg-current"
-                />
+              <div className="overflow-y-auto whitespace-pre-wrap p-3 pb-12 text-base leading-relaxed h-full">
+                {translation}
+                {isStreaming && (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 1, 0] }}
+                    transition={{ duration: 0.8, repeat: Infinity }}
+                    className="inline-block ml-1 w-2 h-4 bg-current"
+                  />
+                )}
+              </div>
+              {/* Copy button inside translation box */}
+              {translation && !isLoading && !isStreaming && (
+                <div className="absolute bottom-2 right-2">
+                  <CopyButton textToCopy={finalTranslation} />
+                </div>
               )}
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
-      
-      <div className="h-6 text-right">
-        {translation && !isLoading && !isStreaming && (
-          <CopyButton textToCopy={finalTranslation} />
-        )}
       </div>
     </div>
   );

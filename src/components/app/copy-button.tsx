@@ -51,14 +51,14 @@ export function CopyButton({ textToCopy }: CopyButtonProps) {
 
   return (
     <Button
-      variant="outline"
+      variant="ghost"
       size="sm"
       onClick={handleCopy}
       className={cn(
-        "w-24 shrink-0 transition-all",
+        "h-8 px-3 text-xs font-medium transition-all shadow-sm",
         isCopied
-          ? "bg-secondary text-secondary-foreground"
-          : "hover:bg-accent hover:text-accent-foreground"
+          ? "bg-primary/20 text-primary hover:bg-primary/30"
+          : "bg-background/80 hover:bg-accent hover:text-accent-foreground backdrop-blur-sm"
       )}
     >
       {isCopied ? "Copied!" : "Copy"}

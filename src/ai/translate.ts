@@ -24,7 +24,7 @@ const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
 // In-memory cooldown tracking
 const userCooldowns = new Map<string, number>();
-const COOLDOWN_SECONDS = 15;
+const COOLDOWN_SECONDS = 5;
 
 interface TranslateCustomerQueryInput {
   query: string;
