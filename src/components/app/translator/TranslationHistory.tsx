@@ -158,7 +158,7 @@ export function TranslationHistory({
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-xl">
+      <SheetContent className="w-full sm:max-w-2xl lg:max-w-3xl">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <History className="h-5 w-5 text-primary" />
@@ -200,34 +200,34 @@ export function TranslationHistory({
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Accordion type="single" collapsible className="space-y-2">
+                  <Accordion type="single" collapsible className="space-y-3">
                     {history.map((item, index) => (
                       <AccordionItem
                         key={item.id}
                         value={item.id}
-                        className="border rounded-lg bg-card shadow-sm hover:shadow-md transition-all"
+                        className="border rounded-lg bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-all overflow-hidden"
                       >
-                        <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-accent/30">
-                          <div className="flex items-center justify-between w-full pr-2">
+                        <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-accent/20 [&[data-state=open]]:bg-accent/30">
+                          <div className="flex items-center justify-between w-full pr-2 gap-3">
                             <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <Badge variant="outline" className="shrink-0">
+                              <Badge variant="outline" className="shrink-0 font-semibold">
                                 #{history.length - index}
                               </Badge>
-                              <p className="text-sm font-medium truncate text-left">
-                                {item.originalText.substring(0, 50)}
-                                {item.originalText.length > 50 && "..."}
+                              <p className="text-sm font-medium truncate text-left flex-1">
+                                {item.originalText.substring(0, 60)}
+                                {item.originalText.length > 60 && "..."}
                               </p>
                             </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <Clock className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-xs text-muted-foreground">
+                            <div className="flex items-center gap-2 shrink-0 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              <span className="hidden sm:inline">
                                 {formatTimeAgo(item.createdAt)}
                               </span>
                             </div>
                           </div>
                         </AccordionTrigger>
-                        <AccordionContent className="px-4 pb-4">
-                          <div className="space-y-3 pt-2">
+                        <AccordionContent className="px-4 pb-4 pt-0">
+                          <div className="space-y-3 pt-3">
                             {/* Original Text */}
                             <div className="space-y-2">
                               <div className="flex items-center justify-between">
