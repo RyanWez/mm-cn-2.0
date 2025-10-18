@@ -52,7 +52,7 @@ export function Sidebar({
 
   // Sidebar content component (reusable for both desktop and mobile)
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-[#F2F5F8]">
+    <div className="flex flex-col h-full bg-background/95 backdrop-blur-sm">
       {/* Header with Logo */}
       <div className="h-16 border-b border-border flex items-center px-4 overflow-hidden">
         {!isCollapsed ? (
@@ -86,9 +86,9 @@ export function Sidebar({
         <Button
           variant="ghost"
           className={cn(
-            "w-full font-semibold smooth-transition",
+            "w-full font-semibold smooth-transition hover:bg-accent/50",
             isCollapsed ? "justify-center px-2" : "justify-start gap-3",
-            !selectedCategory && "bg-accent"
+            !selectedCategory && "bg-accent/80 hover:bg-accent"
           )}
           onClick={handleDashboardClick}
         >
@@ -106,7 +106,7 @@ export function Sidebar({
         <div className="px-4 flex-1 overflow-y-auto">
           <Button
             variant="ghost"
-            className="w-full justify-between text-left font-semibold hover:bg-accent"
+            className="w-full justify-between text-left font-semibold hover:bg-accent/50"
             onClick={() => setIsCommonPhrasesOpen(!isCommonPhrasesOpen)}
           >
             <span className="transition-all duration-500 ease-out opacity-100 transform translate-x-0 whitespace-nowrap">
@@ -126,8 +126,8 @@ export function Sidebar({
                   key={category.category}
                   variant="ghost"
                   className={cn(
-                    "w-full justify-start text-left text-sm hover:bg-accent smooth-transition gap-3",
-                    selectedCategory === category.category && "bg-accent text-accent-foreground"
+                    "w-full justify-start text-left text-sm hover:bg-accent/50 smooth-transition gap-3",
+                    selectedCategory === category.category && "bg-accent/80 text-accent-foreground hover:bg-accent"
                   )}
                   onClick={() => handleCategoryClick(category.category)}
                 >
@@ -159,8 +159,8 @@ export function Sidebar({
               variant="ghost"
               size="icon"
               className={cn(
-                "w-full h-12 hover:bg-accent smooth-transition rounded-lg",
-                selectedCategory === category.category && "bg-accent text-accent-foreground"
+                "w-full h-12 hover:bg-accent/50 smooth-transition rounded-lg",
+                selectedCategory === category.category && "bg-accent/80 text-accent-foreground hover:bg-accent"
               )}
               onClick={() => handleCategoryClick(category.category)}
               title={category.category}
@@ -189,7 +189,7 @@ export function Sidebar({
     <>
       {/* Desktop Sidebar - Hidden on mobile */}
       <div className={cn(
-        "hidden lg:block fixed left-0 top-0 h-screen bg-[#F2F5F8] border-r border-border smooth-transition z-40 shadow-lg",
+        "hidden lg:block fixed left-0 top-0 h-screen bg-background/95 backdrop-blur-sm border-r border-border smooth-transition z-40 shadow-lg",
         isCollapsed ? "w-20" : "w-64"
       )}>
         <SidebarContent />
@@ -197,7 +197,7 @@ export function Sidebar({
 
       {/* Mobile Sidebar - Sheet Drawer */}
       <Sheet open={isMobileOpen} onOpenChange={onMobileClose}>
-        <SheetContent side="left" className="w-64 p-0 bg-[#F2F5F8]">
+        <SheetContent side="left" className="w-64 p-0 bg-background">
           <SheetHeader className="sr-only">
             <SheetTitle>Navigation Menu</SheetTitle>
           </SheetHeader>

@@ -30,6 +30,33 @@
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
   }
+
+  .dark {
+    --background: 222 20% 12%;
+    --foreground: 210 40% 98%;
+    --card: 222 20% 15%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 20% 15%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 215 66% 65%;
+    --primary-foreground: 222 20% 12%;
+    --secondary: 217 19% 20%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 19% 20%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 203 80% 55%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 19% 25%;
+    --input: 217 19% 25%;
+    --ring: 215 66% 65%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
 }
 
 @layer base {
@@ -44,35 +71,38 @@
 /* === Custom V2 Styles === */
 @layer base {
   body {
-    /* A more vibrant, modern gradient background */
-    background: #83a4d4; /* fallback for old browsers */
-    background: -webkit-linear-gradient(
-      to right,
-      #b6fbff,
-      #83a4d4
-    ); /* Chrome 10-25, Safari 5.1-6 */
-    background: linear-gradient(
-      to right,
-      #b6fbff,
-      #83a4d4
-    ); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+    /* Light mode gradient */
+    background: #83a4d4;
+    background: -webkit-linear-gradient(to right, #b6fbff, #83a4d4);
+    background: linear-gradient(to right, #b6fbff, #83a4d4);
     background-attachment: fixed;
   }
 
+  .dark body {
+    /* Dark mode gradient - softer, not too dark */
+    background: #1a1f2e;
+    background: -webkit-linear-gradient(to right, #1e2a3a, #1a1f2e);
+    background: linear-gradient(to right, #1e2a3a, #1a1f2e);
+    background-attachment: fixed;
+  }
 }
 
 @layer components {
   /* Glassmorphism Card Style */
   .glass-card {
-    /* Using rgba values for theme-agnostic transparency */
     background: rgba(255, 255, 255, 0.15) !important;
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px); /* For Safari */
-    border-radius: 1rem; /* Softer corners, using rem unit from shadcn */
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 1rem;
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.25);
   }
 
+  .dark .glass-card {
+    background: rgba(30, 42, 58, 0.4) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  }
 }
 @layer components {
   /* Smooth Transitions and Hovers */
@@ -127,6 +157,16 @@
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;  /* Chrome, Safari, and Opera */
+  }
+
+  /* Smooth button interactions */
+  button {
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+                box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  button:active {
+    transform: scale(0.99);
   }
 
   /* Mobile touch optimization */

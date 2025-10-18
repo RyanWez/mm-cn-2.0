@@ -44,10 +44,9 @@ export default function RootLayout({
       <body className={`${ptSans.variable} font-body antialiased`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
-          themes={["light"]}
-          enableSystem={false}
-          disableTransitionOnChange
+          defaultTheme="system"
+          enableSystem={true}
+          disableTransitionOnChange={false}
         >
           {children}
           <Toaster />

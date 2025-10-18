@@ -2,6 +2,7 @@
 
 import { Languages, Menu, PanelLeftOpen, PanelLeftClose } from "lucide-react";
 import { ReactNode } from "react";
+import { ThemeToggle } from "./theme-toggle";
 
 interface HeaderProps {
   isCollapsed: boolean;
@@ -50,6 +51,7 @@ export function Header({ isCollapsed, onToggle, onMobileMenuToggle, rightContent
       </div>
       
       <div className="flex items-center gap-2">
+        <ThemeToggle />
         {rightContent}
       </div>
     </header>
