@@ -16,11 +16,11 @@ export function TranslationOutput({ translation, isLoading, finalTranslation }: 
         Translation
       </div>
       {isLoading && !translation ? (
-        <div className="flex h-[110px] items-center justify-center rounded-md border bg-muted">
+        <div className="flex h-[150px] items-center justify-center rounded-md border bg-muted">
           <LottieLoader />
         </div>
       ) : (
-        <div className="h-[110px] w-full overflow-hidden whitespace-pre-wrap rounded-md bg-muted p-3 text-base leading-relaxed">
+        <div className="min-h-[150px] max-h-[400px] w-full overflow-y-auto whitespace-pre-wrap rounded-md bg-muted p-3 text-base leading-relaxed">
           {translation}
         </div>
       )}

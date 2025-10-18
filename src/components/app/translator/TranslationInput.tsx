@@ -20,7 +20,7 @@ export function TranslationInput({ value, onChange, maxLength }: TranslationInpu
         value={value}
         onChange={onChange}
         rows={6}
-        className="bg-transparent text-base"
+        className="bg-transparent text-base min-h-[150px] max-h-[400px] resize-y"
         maxLength={maxLength}
       />
       <p className="pr-1 text-right text-xs text-muted-foreground">

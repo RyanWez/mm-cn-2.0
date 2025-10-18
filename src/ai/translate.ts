@@ -5,20 +5,26 @@ import {
   HarmCategory,
   HarmBlockThreshold,
 } from "@google/generative-ai";
-import { firestoreAdmin } from "@/lib/firebase-admin";
-import * as admin from "firebase-admin";
 
 if (!process.env.GEMINI_API_KEY) {
   throw new Error("GEMINI_API_KEY is not set in environment variables");
 }
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const cacheCollection = firestoreAdmin.collection("translations_cache");
-const cooldownsCollection = firestoreAdmin.collection("user_cooldowns");
-const COOLDOWN_SECONDS = 15;
 const MAX_RETRIES = 3;
-const BASE_DELAY = 1000; // 1 second base delay
-const MAX_DELAY = 10000; // 10 seconds max delay
+const BASE_DELAY = 1000;
+const MAX_DELAY = 10000;
+
+// In-memory cache for server-side caching
+const serverCache = new Map<
+  string,
+  { translation: string; timestamp: number }
+>();
+const CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
+
+// In-memory cooldown tracking
+const userCooldowns = new Map<string, number>();
+const COOLDOWN_SECONDS = 15;
 
 interface TranslateCustomerQueryInput {
   query: string;
@@ -32,116 +38,112 @@ async function retryWithBackoff<T>(
   baseDelay: number = BASE_DELAY
 ): Promise<T> {
   let lastError: any;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error: any) {
       lastError = error;
-      
-      // Don't retry on certain error types
-      if (error.message?.includes("API key") ||
-          error.message?.includes("authentication") ||
-          error.message?.includes("permission") ||
-          error.status === 401 ||
-          error.status === 403 ||
-          error.status === 400) {
+
+      if (
+        error.message?.includes("API key") ||
+        error.message?.includes("authentication") ||
+        error.message?.includes("permission") ||
+        error.status === 401 ||
+        error.status === 403 ||
+        error.status === 400
+      ) {
         throw error;
       }
-      
-      // If this is the last attempt, throw the error
+
       if (attempt === maxRetries) {
         break;
       }
-      
-      // For 503 errors (service unavailable), use longer delays
-      const isServiceUnavailable = error.status === 503 ||
-                                   error.statusText === 'Service Unavailable' ||
-                                   error.message?.includes('overloaded');
-      
-      const multiplier = isServiceUnavailable ? 3 : 2; // Longer delays for service unavailable
-      
-      // Calculate delay with exponential backoff and jitter
+
+      const isServiceUnavailable =
+        error.status === 503 ||
+        error.statusText === "Service Unavailable" ||
+        error.message?.includes("overloaded");
+
+      const multiplier = isServiceUnavailable ? 3 : 2;
+
       const delay = Math.min(
         baseDelay * Math.pow(multiplier, attempt) + Math.random() * 1000,
         MAX_DELAY
       );
-      
-      console.log(`API call failed (attempt ${attempt + 1}/${maxRetries + 1}): ${error.message || error.status}, retrying in ${Math.round(delay)}ms...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
+
+      console.log(
+        `API call failed (attempt ${attempt + 1}/${maxRetries + 1}): ${error.message || error.status}, retrying in ${Math.round(delay)}ms...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
-  
+
   throw lastError;
 }
 
-// Enhanced error handling function
 function handleApiError(error: any): string {
   console.error("AI Translation Error:", error);
-  
-  if (error.status === 503 || error.statusText === 'Service Unavailable' ||
-      error.message?.includes('overloaded') || error.message?.includes('Service Unavailable')) {
+
+  if (
+    error.status === 503 ||
+    error.statusText === "Service Unavailable" ||
+    error.message?.includes("overloaded") ||
+    error.message?.includes("Service Unavailable")
+  ) {
     return "ဝန်ဆောင်မှုယာယီမရရှိနိုင်ပါ။ ခဏစောင့်ပြီးပြန်လည်ကြိုးစားပေးပါ။ / 服务暂时不可用，请稍后重试。";
   }
-  
+
   if (error.status === 429) {
     return "တောင်းဆိုမှုများလွန်းပါသည်။ ခဏစောင့်ပေးပါ။ / 请求过于频繁，请稍后重试。";
   }
-  
+
   if (error.status === 400) {
     return "တောင်းဆိုမှုမှားယွင်းနေပါသည်။ / 请求格式错误。";
   }
-  
+
   if (error.status === 401 || error.status === 403) {
     return "ခွင့်ပြုချက်ပြဿနာရှိနေပါသည်။ / 权限验证失败။";
   }
-  
-  // Generic error message
+
   return "ယာယီဘာသာပြန်ဆောင်ရွက်၍မရပါ။ ခဏစောင့်ပြီးပြန်လည်ကြိုးစားပေးပါ။ / 翻译服务暂时不可用，请稍后重试。";
 }
 
-// Simple fallback translation for common phrases
 function getFallbackTranslation(text: string): string | null {
   const fallbackMap: { [key: string]: string } = {
-    // Common customer service phrases
-    "ငွေထုတ်": "提款 / Withdrawal",
-    "ငွေသွင်း": "存款 / Deposit",
-    "လက်ကျန်ငွေ": "余额 / Balance",
-    "အကောင့်": "账户 / Account",
-    "ပြဿနာ": "问题 / Problem",
-    "အကူအညီ": "帮助 / Help",
-    "စောင့်ဆိုင်းနေ": "等待中 / Waiting",
-    "လုပ်ဆောင်နေ": "处理中 / Processing",
-    
-    // Chinese to Burmese/English
-    "提款": "ငွေထုတ် / Withdrawal",
-    "存款": "ငွေသွင်း / Deposit",
-    "余额": "လက်ကျန်ငွေ / Balance",
-    "账户": "အကောင့် / Account",
-    "问题": "ပြဿနာ / Problem",
-    "帮助": "အကူအညီ / Help",
-    "等待": "စောင့်ဆိုင်း / Wait",
-    "处理": "လုပ်ဆောင် / Process",
+    ငွေထုတ်: "提款 / Withdrawal",
+    ငွေသွင်း: "存款 / Deposit",
+    လက်ကျန်ငွေ: "余额 / Balance",
+    အကောင့်: "账户 / Account",
+    ပြဿနာ: "问题 / Problem",
+    အကူအညီ: "帮助 / Help",
+    စောင့်ဆိုင်းနေ: "等待中 / Waiting",
+    လုပ်ဆောင်နေ: "处理中 / Processing",
+    提款: "ငွေထုတ် / Withdrawal",
+    存款: "ငွေသွင်း / Deposit",
+    余额: "လက်ကျန်ငွေ / Balance",
+    账户: "အကောင့် / Account",
+    问题: "ပြဿနာ / Problem",
+    帮助: "အကူအညီ / Help",
+    等待: "စောင့်ဆိုင်း / Wait",
+    处理: "လုပ်ဆောင် / Process",
   };
-  
+
   const lowerText = text.toLowerCase().trim();
-  
-  // Check for exact matches first
+
   if (fallbackMap[text.trim()]) {
     return fallbackMap[text.trim()];
   }
-  
-  // Check for partial matches
+
   for (const [key, value] of Object.entries(fallbackMap)) {
     if (text.includes(key) || lowerText.includes(key.toLowerCase())) {
       return `${value} (အခြေခံဘာသာပြန်ချက် / 基础翻译)`;
     }
   }
-  
+
   return null;
 }
 
-// Helper to create a stream from a string
 function streamFromString(text: string): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   return new ReadableStream({
@@ -152,7 +154,6 @@ function streamFromString(text: string): ReadableStream<Uint8Array> {
   });
 }
 
-// Function to create ReadableStream from AsyncGenerator
 function createReadableStreamFromAsyncGenerator(
   generator: AsyncGenerator<any, void, undefined>
 ): ReadableStream<Uint8Array> {
@@ -175,7 +176,6 @@ function createReadableStreamFromAsyncGenerator(
 export async function translateCustomerQuery(
   input: TranslateCustomerQueryInput
 ): Promise<ReadableStream<Uint8Array>> {
-  // 1. Input validation
   if (!input.query || input.query.trim() === "" || !input.uid) {
     return new ReadableStream({
       start(controller) {
@@ -186,15 +186,12 @@ export async function translateCustomerQuery(
 
   const { query, uid } = input;
   const sourceText = query.trim();
-  const userCooldownRef = cooldownsCollection.doc(uid);
 
   try {
-    // 2. Cooldown check
-    const cooldownDoc = await userCooldownRef.get();
-    if (cooldownDoc.exists) {
-      const lastTranslatedAt = cooldownDoc.data()?.lastTranslatedAt as admin.firestore.Timestamp;
-      const secondsSinceLastTranslation =
-        Date.now() / 1000 - lastTranslatedAt.seconds;
+    // Check cooldown
+    const lastTranslation = userCooldowns.get(uid);
+    if (lastTranslation) {
+      const secondsSinceLastTranslation = (Date.now() - lastTranslation) / 1000;
       if (secondsSinceLastTranslation < COOLDOWN_SECONDS) {
         const remaining = Math.ceil(
           COOLDOWN_SECONDS - secondsSinceLastTranslation
@@ -205,22 +202,17 @@ export async function translateCustomerQuery(
       }
     }
 
-    // 3. Check cache first
-    const querySnapshot = await cacheCollection
-      .where("sourceText", "==", sourceText)
-      .get();
-
-    if (!querySnapshot.empty) {
-      const cachedDoc = querySnapshot.docs[0];
-      const cachedTranslation = cachedDoc.data().translatedText;
-      console.log("Cache hit for:", sourceText);
-      return streamFromString(cachedTranslation);
+    // Check server cache
+    const cached = serverCache.get(sourceText);
+    if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY) {
+      console.log("Server cache hit for:", sourceText);
+      return streamFromString(cached.translation);
     }
 
     console.log("Cache miss for:", sourceText);
-    // 4. If not in cache, call the AI
+
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-preview-09-2025",
       generationConfig: {
         temperature: 0.5,
       },
@@ -300,7 +292,7 @@ export async function translateCustomerQuery(
       * Verification → အတည်ပြုခြင်း / 验证
       * Customer Service → ဖောက်သည်ဝန်ဆောင်မှု / 客服
       * Support → အကူအညီ / 技术支持
-      * Issue → ပြဿနা / 问题
+      * Issue → ပြဿနာ / 问题
 
       **Cultural & Social:**
       * Brother → အကို / 哥哥 (respectful) | ညီ / 兄弟 (casual/equal)
@@ -337,9 +329,6 @@ export async function translateCustomerQuery(
 
       **Professional Translation:**`;
 
-
-
-    // Use retry logic for the API call
     const result = await retryWithBackoff(async () => {
       return await model.generateContentStream(prompt);
     });
@@ -350,27 +339,21 @@ export async function translateCustomerQuery(
         fullTranslation += new TextDecoder().decode(chunk);
         controller.enqueue(chunk);
       },
-      async flush(controller) {
-        // 5. After stream is complete, save to cache and update cooldown
+      async flush() {
         if (fullTranslation) {
-          try {
-            await Promise.all([
-              cacheCollection.add({
-                sourceText: sourceText,
-                translatedText: fullTranslation,
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
-              }),
-              userCooldownRef.set(
-                {
-                  lastTranslatedAt: admin.firestore.FieldValue.serverTimestamp(),
-                },
-                { merge: true }
-              ),
-            ]);
-            console.log("Saved to cache and updated cooldown for:", sourceText);
-          } catch (writeError) {
-            console.error("Failed to save to cache or update cooldown:", writeError);
-          }
+          // Save to server cache
+          serverCache.set(sourceText, {
+            translation: fullTranslation,
+            timestamp: Date.now(),
+          });
+
+          // Update cooldown
+          userCooldowns.set(uid, Date.now());
+
+          console.log(
+            "Saved to server cache and updated cooldown for:",
+            sourceText
+          );
         }
       },
     });
@@ -379,19 +362,16 @@ export async function translateCustomerQuery(
       transformer
     );
   } catch (e: any) {
-    // Check if it's a cooldown error, which is expected, so don't log it as a server error.
     if (e.message.includes("You must wait")) {
       return streamFromString(`Error: ${e.message}`);
     }
-    
-    // Try fallback translation for simple phrases
+
     const fallbackTranslation = getFallbackTranslation(sourceText);
     if (fallbackTranslation) {
       console.log(`Using fallback translation for: ${sourceText}`);
       return streamFromString(fallbackTranslation);
     }
-    
-    // Use enhanced error handling
+
     const errorMessage = handleApiError(e);
     return streamFromString(errorMessage);
   }

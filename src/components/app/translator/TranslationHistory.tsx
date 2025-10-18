@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { CopyButton } from "../copy-button";
-import { getTranslationHistory } from "@/lib/database";
+import { getTranslationHistory } from "@/lib/storage";
 
 interface TranslationHistoryItem {
   id: string;
@@ -46,13 +46,20 @@ export function TranslationHistory({
     setError("");
     
     try {
-      // First get total count
-      const allHistory = await getTranslationHistory(uid, 1000); // Get a large number to count
-      setTotalCount(allHistory.length);
+      // Get all history from localStorage
+      const allHistory = getTranslationHistory();
       
-      // Then get paginated data
+      // Add IDs if not present
+      const historyWithIds = allHistory.map((item, index) => ({
+        ...item,
+        id: `history-${index}-${item.createdAt.getTime()}`,
+      }));
+      
+      setTotalCount(historyWithIds.length);
+      
+      // Paginate
       const startIndex = (page - 1) * itemsPerPage;
-      const paginatedHistory = allHistory.slice(startIndex, startIndex + itemsPerPage);
+      const paginatedHistory = historyWithIds.slice(startIndex, startIndex + itemsPerPage);
       setHistory(paginatedHistory);
     } catch (err) {
       setError("Failed to load translation history");

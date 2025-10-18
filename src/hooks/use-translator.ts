@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { getAnonymousUser } from "@/lib/auth";
 import {
   saveTranslationHistory,
   findTranslationInHistory,
-} from "@/lib/database";
+  getUserId,
+  checkCooldown,
+  updateCooldown,
+} from "@/lib/storage";
 import { translateCustomerQuery } from "@/ai/translate";
 
 const COOLDOWN_SECONDS = 15;
@@ -21,12 +23,15 @@ export function useTranslator() {
   const finalTranslationRef = useRef("");
 
   useEffect(() => {
-    getAnonymousUser()
-      .then((user) => setUid(user.uid))
-      .catch((e) => {
-        console.error("Failed to get anonymous user:", e);
-        setError("Could not initialize user session. Please refresh the page.");
-      });
+    // Get or create user ID
+    const userId = getUserId();
+    setUid(userId);
+    
+    // Check initial cooldown
+    const remaining = checkCooldown();
+    if (remaining > 0) {
+      setCooldown(remaining);
+    }
   }, []);
 
   useEffect(() => {
@@ -67,17 +72,14 @@ export function useTranslator() {
     };
 
     try {
-      // First, check for a cached translation. No cooldown for cache hits.
-      const cachedTranslation = await findTranslationInHistory(
-        uid,
-        trimmedInput
-      );
+      // First, check for a cached translation
+      const cachedTranslation = findTranslationInHistory(trimmedInput);
       if (cachedTranslation) {
         await typeChunkWithDelay(cachedTranslation);
-        return; // Exit early, no API call, no cooldown
+        return;
       }
 
-      // If not cached, call the server which enforces its own cooldown.
+      // If not cached, call the server
       const stream = await translateCustomerQuery({ query: trimmedInput, uid });
       const reader = stream.getReader();
       const decoder = new TextDecoder();
@@ -90,11 +92,10 @@ export function useTranslator() {
         fullResponse += decodedChunk;
       }
 
-      // The server returns an error message in the stream if on cooldown.
+      // Check for error message
       if (fullResponse.startsWith("Error:")) {
         const cooldownMessage = fullResponse.replace("Error: ", "");
         setError(cooldownMessage);
-        // Try to parse the remaining seconds from the message to sync the client timer
         const match = cooldownMessage.match(/(\d+)/);
         if (match && match[1]) {
           setCooldown(parseInt(match[1], 10));
@@ -102,11 +103,12 @@ export function useTranslator() {
         return;
       }
 
-      // If the translation was successful, display it and start the UI cooldown.
+      // Display translation and save to history
       await typeChunkWithDelay(fullResponse);
-      await saveTranslationHistory(uid, trimmedInput, finalTranslationRef.current);
-      setHistoryRefreshTrigger(prev => prev + 1); // Trigger history refresh
-      setCooldown(COOLDOWN_SECONDS); // Start client-side cooldown for UI feedback
+      saveTranslationHistory(trimmedInput, finalTranslationRef.current);
+      updateCooldown();
+      setHistoryRefreshTrigger(prev => prev + 1);
+      setCooldown(COOLDOWN_SECONDS);
     } catch (e: any) {
       setError("Failed to get translation. Please try again.");
       console.error(e);
