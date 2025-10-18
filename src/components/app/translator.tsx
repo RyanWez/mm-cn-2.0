@@ -51,7 +51,7 @@ export function Translator() {
             <TranslationInput
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              maxLength={250}
+              maxLength={1000}
             />
             <TranslationOutput
               translation={translation}
