@@ -151,3 +151,21 @@ export const updateCooldown = (): void => {
   if (typeof window === "undefined") return;
   localStorage.setItem(COOLDOWN_KEY, Date.now().toString());
 };
+
+// Delete translation history by ID
+export const deleteTranslationHistory = (id: string): void => {
+  if (typeof window === "undefined") return;
+
+  try {
+    const history = getTranslationHistory();
+    // Extract index from ID (format: history-{index}-{timestamp})
+    const filtered = history.filter((_, index) => {
+      const itemId = `history-${index}-${_.createdAt.getTime()}`;
+      return itemId !== id;
+    });
+
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(filtered));
+  } catch (error) {
+    console.error("Error deleting translation history:", error);
+  }
+};

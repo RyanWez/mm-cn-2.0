@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
-import { Clock, Copy, History } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Clock, Copy, History, Trash2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -15,7 +15,13 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { getTranslationHistory } from "@/lib/storage";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { getTranslationHistory, deleteTranslationHistory } from "@/lib/storage";
 
 interface TranslationHistoryItem {
   id: string;
@@ -115,6 +121,13 @@ export function TranslationHistory({
     }
   };
 
+  const handleDelete = (id: string) => {
+    // Delete from localStorage
+    deleteTranslationHistory(id);
+    // Refresh history
+    fetchHistory(currentPage);
+  };
+
   const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   const handlePageChange = (page: number) => {
@@ -187,85 +200,97 @@ export function TranslationHistory({
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.3 }}
                 >
-                  {history.map((item) => (
-                    <motion.div
-                      key={item.id}
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="group rounded-lg border bg-card p-4 hover:bg-accent/30 transition-all duration-200 shadow-sm hover:shadow-md"
-                    >
-                      <div className="space-y-4">
-                        {/* Original Text */}
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                              Original
+                  <Accordion type="single" collapsible className="space-y-2">
+                    {history.map((item, index) => (
+                      <AccordionItem
+                        key={item.id}
+                        value={item.id}
+                        className="border rounded-lg bg-card shadow-sm hover:shadow-md transition-all"
+                      >
+                        <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-accent/30">
+                          <div className="flex items-center justify-between w-full pr-2">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <Badge variant="outline" className="shrink-0">
+                                #{history.length - index}
+                              </Badge>
+                              <p className="text-sm font-medium truncate text-left">
+                                {item.originalText.substring(0, 50)}
+                                {item.originalText.length > 50 && "..."}
+                              </p>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyToClipboard(item.originalText, `${item.id}-original`)}
-                              className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <Copy className="h-3 w-3 mr-1" />
-                              {copiedStates[`${item.id}-original`] ? "Copied!" : "Copy"}
-                            </Button>
-                          </div>
-                          <div className="bg-muted/50 rounded-md p-3 border-l-2 border-primary/20">
-                            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
-                              {item.originalText}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Translation */}
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                              Translation
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Clock className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">
+                                {formatTimeAgo(item.createdAt)}
+                              </span>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyToClipboard(item.translatedText, `${item.id}-translation`)}
-                              className="h-6 px-2 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <Copy className="h-3 w-3 mr-1" />
-                              {copiedStates[`${item.id}-translation`] ? "Copied!" : "Copy"}
-                            </Button>
                           </div>
-                          <div className="bg-accent/50 rounded-md p-3 border-l-2 border-secondary/40">
-                            <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
-                              {item.translatedText}
-                            </p>
-                          </div>
-                        </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4">
+                          <div className="space-y-3 pt-2">
+                            {/* Original Text */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-muted-foreground uppercase">
+                                  Original
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(item.originalText, `${item.id}-original`)}
+                                  className="h-7 px-2 text-xs"
+                                >
+                                  <Copy className="h-3 w-3 mr-1" />
+                                  {copiedStates[`${item.id}-original`] ? "Copied!" : "Copy"}
+                                </Button>
+                              </div>
+                              <div className="bg-muted/50 rounded-md p-3 border-l-2 border-primary/20">
+                                <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                                  {item.originalText}
+                                </p>
+                              </div>
+                            </div>
 
-                        {/* Footer */}
-                        <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">
-                              {formatTimeAgo(item.createdAt)}
-                            </span>
+                            {/* Translation */}
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-muted-foreground uppercase">
+                                  Translation
+                                </span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => copyToClipboard(item.translatedText, `${item.id}-translation`)}
+                                  className="h-7 px-2 text-xs"
+                                >
+                                  <Copy className="h-3 w-3 mr-1" />
+                                  {copiedStates[`${item.id}-translation`] ? "Copied!" : "Copy"}
+                                </Button>
+                              </div>
+                              <div className="bg-accent/50 rounded-md p-3 border-l-2 border-secondary/40">
+                                <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+                                  {item.translatedText}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex items-center justify-end gap-2 pt-2">
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => handleDelete(item.id)}
+                                className="h-8 px-3 text-xs"
+                              >
+                                <Trash2 className="h-3 w-3 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
                           </div>
-                          
-                          {onSelectTranslation && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => onSelectTranslation(item.originalText, item.translatedText)}
-                              className="h-7 px-3 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <Copy className="h-3 w-3 mr-1" />
-                              Use
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
                 </motion.div>
               </ScrollArea>
               
