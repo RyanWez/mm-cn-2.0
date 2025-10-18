@@ -1,13 +1,15 @@
 "use client";
 
 import { Languages, Menu, X, PanelLeftOpen, PanelLeftClose } from "lucide-react";
+import { ReactNode } from "react";
 
 interface HeaderProps {
   isCollapsed: boolean;
   onToggle: (collapsed: boolean) => void;
+  rightContent?: ReactNode;
 }
 
-export function Header({ isCollapsed, onToggle }: HeaderProps) {
+export function Header({ isCollapsed, onToggle, rightContent }: HeaderProps) {
   return (
     <header className="h-16 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40 flex items-center justify-between px-6 sticky top-0 z-50 smooth-transition">
       <div className="flex items-center gap-3">
@@ -32,6 +34,7 @@ export function Header({ isCollapsed, onToggle }: HeaderProps) {
         </div>
       </div>
       <div className="flex items-center gap-2">
+        {rightContent}
       </div>
     </header>
   );

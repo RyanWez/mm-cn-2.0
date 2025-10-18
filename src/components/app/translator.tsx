@@ -13,7 +13,6 @@ import { TranslationInput } from "./translator/TranslationInput";
 import { TranslationOutput } from "./translator/TranslationOutput";
 import { TranslateButton } from "./translator/TranslateButton";
 import { ErrorAlert } from "./translator/ErrorAlert";
-import { TranslationHistory } from "./translator/TranslationHistory";
 
 export function Translator() {
   const {
@@ -44,7 +43,7 @@ export function Translator() {
             Live Translator V2.0
           </CardTitle>
           <CardDescription>
-            Streaming translation with history-based caching.
+            AI-powered translation for customer service chats.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -72,15 +71,6 @@ export function Translator() {
           />
         </CardContent>
       </Card>
-
-      {/* Translation History */}
-      <div className="mt-6">
-        <TranslationHistory
-          uid={uid}
-          onSelectTranslation={handleSelectFromHistory}
-          refreshTrigger={historyRefreshTrigger}
-        />
-      </div>
     </motion.div>
   );
 }

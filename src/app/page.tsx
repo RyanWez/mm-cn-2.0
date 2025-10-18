@@ -5,10 +5,15 @@ import { Translator } from "@/components/app/translator";
 import { Sidebar } from "@/components/app/sidebar";
 import { Header } from "@/components/app/header";
 import { CategoryPhrases } from "@/components/app/category-phrases";
+import { TranslationHistory } from "@/components/app/translator/TranslationHistory";
+import { useTranslator } from "@/hooks/use-translator";
 
 export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
+  // Get translator state for history
+  const { uid, historyRefreshTrigger, handleSelectFromHistory } = useTranslator();
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
@@ -37,7 +42,17 @@ export default function Home() {
         isSidebarCollapsed ? 'ml-20' : 'ml-64'
       }`}>
         {/* Header */}
-        <Header isCollapsed={isSidebarCollapsed} onToggle={handleSidebarToggle} />
+        <Header 
+          isCollapsed={isSidebarCollapsed} 
+          onToggle={handleSidebarToggle}
+          rightContent={
+            <TranslationHistory
+              uid={uid}
+              onSelectTranslation={handleSelectFromHistory}
+              refreshTrigger={historyRefreshTrigger}
+            />
+          }
+        />
         
         {/* Body */}
         <main className="flex-1 p-6 overflow-auto">
