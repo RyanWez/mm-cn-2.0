@@ -22,14 +22,15 @@ export function TranslateButton({ onClick, isDisabled, isLoading, cooldown }: Tr
       <Button
         onClick={onClick}
         disabled={isDisabled}
-        className="w-full"
+        className="w-full h-12 sm:h-11 text-base sm:text-sm font-semibold"
+        size="lg"
       >
         {isLoading ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Loader2 className="mr-2 h-5 w-5 sm:h-4 sm:w-4 animate-spin" />
         ) : cooldown > 0 ? (
           <span>Try again in {cooldown}s</span>
         ) : (
-          <Languages className="mr-2 h-4 w-4" />
+          <Languages className="mr-2 h-5 w-5 sm:h-4 sm:w-4" />
         )}
         {cooldown === 0 && "Translate"}
       </Button>

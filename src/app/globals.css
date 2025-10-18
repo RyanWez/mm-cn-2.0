@@ -129,6 +129,34 @@
     display: none;  /* Chrome, Safari, and Opera */
   }
 
+  /* Mobile touch optimization */
+  @media (max-width: 768px) {
+    /* Larger touch targets on mobile */
+    button, a {
+      min-height: 44px;
+      min-width: 44px;
+    }
+    
+    /* Better text readability on mobile */
+    body {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    /* Prevent zoom on input focus (iOS) */
+    input, textarea, select {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Tablet optimization */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    /* Optimize spacing for tablets */
+    .glass-card {
+      padding: 1.5rem;
+    }
+  }
+
   /* Thinking indicator animation */
   .thinking-container {
     display: flex;

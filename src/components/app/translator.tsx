@@ -38,15 +38,15 @@ export function Translator() {
       transition={{ duration: 0.5 }}
     >
       <Card className="glass-card">
-        <CardHeader>
-          <CardTitle className="font-headline text-3xl">
+        <CardHeader className="space-y-2 sm:space-y-3">
+          <CardTitle className="font-headline text-2xl sm:text-3xl">
             Live Translator V2.0
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm sm:text-base">
             AI-powered translation for customer service chats.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6">
           <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
             <TranslationInput
               value={inputText}
