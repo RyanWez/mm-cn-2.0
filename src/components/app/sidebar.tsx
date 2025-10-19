@@ -1,6 +1,7 @@
 "use client";
 
-import { Languages } from "lucide-react";
+import { useState } from "react";
+import { Languages, Gift, QrCode, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -13,6 +14,7 @@ import Image from "next/image";
 
 interface SidebarProps {
   onTranslateClick: () => void;
+  onQRCodeClick?: () => void;
   isCollapsed: boolean;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
@@ -20,13 +22,25 @@ interface SidebarProps {
 
 export function Sidebar({
   onTranslateClick,
+  onQRCodeClick,
   isCollapsed,
   isMobileOpen = false,
   onMobileClose,
 }: SidebarProps) {
+  const [isToolsExpanded, setIsToolsExpanded] = useState(false);
+
   const handleTranslateClick = () => {
     onTranslateClick();
     onMobileClose?.();
+  };
+
+  const handleQRCodeClick = () => {
+    onQRCodeClick?.();
+    onMobileClose?.();
+  };
+
+  const toggleTools = () => {
+    setIsToolsExpanded(!isToolsExpanded);
   };
 
   // Sidebar content component (reusable for both desktop and mobile)
@@ -61,7 +75,7 @@ export function Sidebar({
       </div>
 
       {/* Translate Mode */}
-      <div className="p-4">
+      <div className="p-4 space-y-2">
         <Button
           variant="ghost"
           className={cn(
@@ -77,6 +91,48 @@ export function Sidebar({
             </span>
           )}
         </Button>
+
+        {/* Tools Section (礼物) */}
+        <div className="space-y-1">
+          <Button
+            variant="ghost"
+            className={cn(
+              "smooth-transition w-full hover:bg-accent/50",
+              isCollapsed ? "justify-center px-2" : "justify-between gap-3"
+            )}
+            onClick={toggleTools}
+          >
+            <div className={cn("flex items-center", isCollapsed ? "" : "gap-3")}>
+              <Gift className="h-5 w-5 flex-shrink-0" />
+              {!isCollapsed && (
+                <span className="translate-x-0 transform whitespace-nowrap opacity-100 transition-all duration-500 ease-out">
+                  礼物
+                </span>
+              )}
+            </div>
+            {!isCollapsed && (
+              isToolsExpanded ? (
+                <ChevronDown className="h-4 w-4 flex-shrink-0" />
+              ) : (
+                <ChevronRight className="h-4 w-4 flex-shrink-0" />
+              )
+            )}
+          </Button>
+
+          {/* Collapsible Tools Menu */}
+          {isToolsExpanded && !isCollapsed && (
+            <div className="ml-4 space-y-1 animate-in slide-in-from-top-2">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 hover:bg-accent/50 text-sm"
+                onClick={handleQRCodeClick}
+              >
+                <QrCode className="h-4 w-4 flex-shrink-0" />
+                <span>QR Code</span>
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
