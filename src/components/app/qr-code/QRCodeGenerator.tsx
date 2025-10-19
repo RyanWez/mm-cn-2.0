@@ -4,11 +4,9 @@ import { useState, useMemo } from "react";
 import { TypeSelector } from "./TypeSelector";
 import { InputArea } from "./InputArea";
 import { QRPreview } from "./QRPreview";
-import { FrameSelector } from "./FrameSelector";
-import { ShapeColorPicker } from "./ShapeColorPicker";
 import { LogoSelector } from "./LogoSelector";
 import { ActionButtons } from "./ActionButtons";
-import { DEFAULT_QR_STATE, QRCodeState, QRType, QRFrame, QRShape, QRLogo, WifiData } from "./types";
+import { DEFAULT_QR_STATE, QRCodeState, QRType, QRLogo, WifiData } from "./types";
 
 export function QRCodeGenerator() {
   const [state, setState] = useState<QRCodeState>(DEFAULT_QR_STATE);
@@ -62,37 +60,11 @@ export function QRCodeGenerator() {
           {/* QR Code Preview */}
           <QRPreview state={state} qrValue={qrValue} />
 
-          {/* Customization Options */}
-          <div className="space-y-3">
-            <FrameSelector
-              selectedFrame={state.frame}
-              onFrameChange={(frame: QRFrame) =>
-                setState({ ...state, frame })
-              }
-            />
-
-            <ShapeColorPicker
-              selectedShape={state.shape}
-              fgColor={state.fgColor}
-              bgColor={state.bgColor}
-              onShapeChange={(shape: QRShape) =>
-                setState({ ...state, shape })
-              }
-              onFgColorChange={(fgColor: string) =>
-                setState({ ...state, fgColor })
-              }
-              onBgColorChange={(bgColor: string) =>
-                setState({ ...state, bgColor })
-              }
-            />
-
-            <LogoSelector
-              selectedLogo={state.logo}
-              onLogoChange={(logo: QRLogo) =>
-                setState({ ...state, logo })
-              }
-            />
-          </div>
+          {/* Logo Selection */}
+          <LogoSelector
+            selectedLogo={state.logo}
+            onLogoChange={(logo: QRLogo) => setState({ ...state, logo })}
+          />
 
           {/* Action Buttons */}
           <ActionButtons qrValue={qrValue} />

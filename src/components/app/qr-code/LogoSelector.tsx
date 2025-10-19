@@ -51,7 +51,7 @@ export function LogoSelector({ selectedLogo, onLogoChange }: LogoSelectorProps) 
       <CollapsibleContent className="mt-2">
         <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
           <Label className="text-xs text-muted-foreground">Select Logo</Label>
-          
+
           <div className="grid grid-cols-4 gap-2">
             {logos.map((logo) => {
               const isActive = selectedLogo === logo.id;
