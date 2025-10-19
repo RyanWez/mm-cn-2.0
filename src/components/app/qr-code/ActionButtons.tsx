@@ -81,29 +81,29 @@ export function ActionButtons({ qrValue }: ActionButtonsProps) {
   };
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-2 sm:gap-3">
       <Button
         onClick={handleDownload}
-        className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+        className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm"
         disabled={!qrValue}
       >
-        <Download className="mr-2 h-4 w-4" />
+        <Download className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
         DOWNLOAD
       </Button>
       <Button
         onClick={handleCopy}
         variant="outline"
-        className="flex-1"
+        className="flex-1 text-xs sm:text-sm"
         disabled={!qrValue}
       >
         {copied ? (
           <>
-            <Check className="mr-2 h-4 w-4" />
+            <Check className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
             Copied
           </>
         ) : (
           <>
-            <Copy className="mr-2 h-4 w-4" />
+            <Copy className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
             COPY
           </>
         )}

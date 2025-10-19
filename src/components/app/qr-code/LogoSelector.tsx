@@ -63,25 +63,25 @@ export function LogoSelector({ logoSettings, onLogoSettingsChange }: LogoSelecto
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger asChild>
-        <Button variant="outline" className="w-full justify-between">
-          <span className="flex items-center gap-2">
-            <ImageIcon className="h-4 w-4" />
+        <Button variant="outline" className="w-full justify-between text-xs sm:text-sm h-9 sm:h-10">
+          <span className="flex items-center gap-1.5 sm:gap-2">
+            <ImageIcon className="h-3 w-3 sm:h-4 sm:w-4" />
             LOGO SETTINGS
           </span>
           <ChevronDown
             className={cn(
-              "h-4 w-4 transition-transform",
+              "h-3 w-3 sm:h-4 sm:w-4 transition-transform",
               isOpen && "transform rotate-180"
             )}
           />
         </Button>
       </CollapsibleTrigger>
       <CollapsibleContent className="mt-2">
-        <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+        <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 bg-muted/30 rounded-lg">
           {/* Logo Selection */}
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Select Logo</Label>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {logos.map((logo) => {
                 const isActive = logoSettings.logo === logo.id;
 
@@ -90,15 +90,15 @@ export function LogoSelector({ logoSettings, onLogoSettingsChange }: LogoSelecto
                     key={logo.id}
                     variant={isActive ? "default" : "outline"}
                     className={cn(
-                      "h-20 flex flex-col items-center justify-center gap-1 p-2",
+                      "h-20 sm:h-20 flex flex-col items-center justify-center gap-1 p-2",
                       isActive && "ring-2 ring-primary"
                     )}
                     onClick={() => handleLogoChange(logo.id)}
                   >
                     {logo.id === "none" ? (
-                      <X className="h-6 w-6" />
+                      <X className="h-5 w-5 sm:h-6 sm:w-6" />
                     ) : logo.path ? (
-                      <div className="relative w-10 h-10">
+                      <div className="relative w-8 h-8 sm:w-10 sm:h-10">
                         <Image
                           src={logo.path}
                           alt={logo.label}
@@ -107,7 +107,7 @@ export function LogoSelector({ logoSettings, onLogoSettingsChange }: LogoSelecto
                         />
                       </div>
                     ) : null}
-                    <span className="text-[10px] text-center">{logo.label}</span>
+                    <span className="text-[9px] sm:text-[10px] text-center">{logo.label}</span>
                   </Button>
                 );
               })}
@@ -123,7 +123,7 @@ export function LogoSelector({ logoSettings, onLogoSettingsChange }: LogoSelecto
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label className="text-xs text-muted-foreground">Logo Size</Label>
-                  <span className="text-xs font-mono text-muted-foreground">{logoSettings.size}px</span>
+                  <span className="text-[10px] sm:text-xs font-mono text-muted-foreground">{logoSettings.size}px</span>
                 </div>
                 <input
                   type="range"
@@ -132,14 +132,14 @@ export function LogoSelector({ logoSettings, onLogoSettingsChange }: LogoSelecto
                   step="5"
                   value={logoSettings.size}
                   onChange={(e) => handleSizeChange(Number(e.target.value))}
-                  className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                  className="w-full h-1.5 sm:h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
                 />
               </div>
 
               {/* Logo Shape */}
               <div className="space-y-2">
                 <Label className="text-xs text-muted-foreground">Logo Shape</Label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                   {shapes.map((shape) => {
                     const Icon = shape.icon;
                     const isActive = logoSettings.shape === shape.id;
@@ -150,13 +150,13 @@ export function LogoSelector({ logoSettings, onLogoSettingsChange }: LogoSelecto
                         variant={isActive ? "default" : "outline"}
                         size="sm"
                         className={cn(
-                          "flex items-center gap-2",
+                          "flex items-center gap-1 sm:gap-2 text-xs px-2 sm:px-3",
                           isActive && "ring-2 ring-primary"
                         )}
                         onClick={() => handleShapeChange(shape.id)}
                       >
-                        <Icon className="h-4 w-4" />
-                        <span className="text-xs">{shape.label}</span>
+                        <Icon className="h-3 w-3 sm:h-4 sm:w-4" />
+                        <span className="text-[10px] sm:text-xs">{shape.label}</span>
                       </Button>
                     );
                   })}
@@ -184,7 +184,7 @@ export function LogoSelector({ logoSettings, onLogoSettingsChange }: LogoSelecto
                 </div>
 
                 {logoSettings.borderEnabled && (
-                  <div className="space-y-3 pl-2 border-l-2 border-muted">
+                  <div className="space-y-2 sm:space-y-3 pl-2 border-l-2 border-muted">
                     {/* Border Color */}
                     <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">Border Color</Label>
@@ -193,9 +193,9 @@ export function LogoSelector({ logoSettings, onLogoSettingsChange }: LogoSelecto
                           type="color"
                           value={logoSettings.borderColor}
                           onChange={(e) => handleBorderColorChange(e.target.value)}
-                          className="h-8 w-16 rounded border cursor-pointer"
+                          className="h-8 w-12 sm:w-16 rounded border cursor-pointer"
                         />
-                        <span className="text-xs text-muted-foreground font-mono">
+                        <span className="text-[10px] sm:text-xs text-muted-foreground font-mono">
                           {logoSettings.borderColor}
                         </span>
                       </div>
@@ -205,7 +205,7 @@ export function LogoSelector({ logoSettings, onLogoSettingsChange }: LogoSelecto
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="text-xs text-muted-foreground">Border Width</Label>
-                        <span className="text-xs font-mono text-muted-foreground">
+                        <span className="text-[10px] sm:text-xs font-mono text-muted-foreground">
                           {logoSettings.borderWidth}px
                         </span>
                       </div>
@@ -226,8 +226,8 @@ export function LogoSelector({ logoSettings, onLogoSettingsChange }: LogoSelecto
           )}
 
           {/* Upload Custom Logo - Future Feature */}
-          <Button variant="outline" className="w-full" disabled>
-            <Upload className="h-4 w-4 mr-2" />
+          <Button variant="outline" className="w-full text-xs sm:text-sm h-9 sm:h-10" disabled>
+            <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
             Upload your own (Coming soon)
           </Button>
         </div>

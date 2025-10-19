@@ -3,7 +3,6 @@
 import { useEffect, useRef } from "react";
 import QRCode from "qrcode";
 import { QRCodeState } from "./types";
-import Image from "next/image";
 
 interface QRPreviewProps {
   state: QRCodeState;
@@ -12,7 +11,6 @@ interface QRPreviewProps {
 
 export function QRPreview({ state, qrValue }: QRPreviewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const logoRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     if (!qrValue || !canvasRef.current) return;
@@ -141,8 +139,8 @@ export function QRPreview({ state, qrValue }: QRPreviewProps) {
 
   if (!qrValue) {
     return (
-      <div className="flex items-center justify-center h-[300px] bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/25">
-        <p className="text-muted-foreground text-sm">
+      <div className="flex items-center justify-center h-[250px] sm:h-[300px] bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/25">
+        <p className="text-muted-foreground text-xs sm:text-sm text-center px-4">
           Enter content to generate QR code
         </p>
       </div>
@@ -150,7 +148,7 @@ export function QRPreview({ state, qrValue }: QRPreviewProps) {
   }
 
   return (
-    <div className="relative flex items-center justify-center p-8 rounded-lg bg-white">
+    <div className="relative flex items-center justify-center p-4 sm:p-8 rounded-lg bg-white">
       <canvas
         ref={canvasRef}
         id="qr-code-canvas"

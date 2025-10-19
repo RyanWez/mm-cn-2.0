@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -22,17 +23,27 @@ export function InputArea({
   onContentChange,
   onWifiDataChange,
 }: InputAreaProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-resize textarea based on content
+  useEffect(() => {
+    if (textareaRef.current && type === "text") {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+    }
+  }, [content, type]);
+
   if (type === "url") {
     return (
       <div className="space-y-2">
-        <Label htmlFor="url-input">Enter URL</Label>
+        <Label htmlFor="url-input" className="text-sm">Enter URL</Label>
         <Input
           id="url-input"
           type="url"
           placeholder="https://example.com"
           value={content}
           onChange={(e) => onContentChange(e.target.value)}
-          className="w-full"
+          className="w-full text-sm"
         />
       </div>
     );
@@ -41,13 +52,15 @@ export function InputArea({
   if (type === "text") {
     return (
       <div className="space-y-2">
-        <Label htmlFor="text-input">Enter your text</Label>
+        <Label htmlFor="text-input" className="text-sm">Enter your text</Label>
         <Textarea
+          ref={textareaRef}
           id="text-input"
           placeholder="Type your text here..."
           value={content}
           onChange={(e) => onContentChange(e.target.value)}
-          className="w-full min-h-[200px] resize-none"
+          className="w-full min-h-[40px] max-h-[400px] overflow-y-auto resize-none text-sm"
+          rows={1}
         />
         <p className="text-xs text-muted-foreground">
           {content.length} characters
@@ -58,9 +71,9 @@ export function InputArea({
 
   if (type === "wifi") {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="wifi-ssid">Network Name (SSID)</Label>
+          <Label htmlFor="wifi-ssid" className="text-sm">Network Name (SSID)</Label>
           <Input
             id="wifi-ssid"
             placeholder="My WiFi Network"
@@ -68,11 +81,12 @@ export function InputArea({
             onChange={(e) =>
               onWifiDataChange({ ...wifiData, ssid: e.target.value })
             }
+            className="text-sm"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="wifi-password">Password</Label>
+          <Label htmlFor="wifi-password" className="text-sm">Password</Label>
           <Input
             id="wifi-password"
             type="password"
@@ -81,18 +95,19 @@ export function InputArea({
             onChange={(e) =>
               onWifiDataChange({ ...wifiData, password: e.target.value })
             }
+            className="text-sm"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="wifi-encryption">Encryption</Label>
+          <Label htmlFor="wifi-encryption" className="text-sm">Encryption</Label>
           <Select
             value={wifiData.encryption}
             onValueChange={(value: "WPA" | "WEP" | "nopass") =>
               onWifiDataChange({ ...wifiData, encryption: value })
             }
           >
-            <SelectTrigger id="wifi-encryption">
+            <SelectTrigger id="wifi-encryption" className="text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -103,18 +118,17 @@ export function InputArea({
           </Select>
         </div>
 
-        <div className="flex items-center gap-2 py-2">
+        <div className="flex items-center gap-2 py-1 sm:py-2">
           <Checkbox
             id="wifi-hidden"
             checked={wifiData.hidden}
             onCheckedChange={(checked) =>
               onWifiDataChange({ ...wifiData, hidden: checked as boolean })
             }
-            className="h-4 w-4 shrink-0"
           />
-          <Label 
-            htmlFor="wifi-hidden" 
-            className="text-sm font-normal cursor-pointer select-none"
+          <Label
+            htmlFor="wifi-hidden"
+            className="text-xs sm:text-sm font-normal cursor-pointer select-none"
           >
             Hidden network
           </Label>
