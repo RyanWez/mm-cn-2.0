@@ -22,19 +22,11 @@ const CACHE_EXPIRY = 24 * 60 * 60; // seconds
 const COOLDOWN_SECONDS = 5;
 const MAX_INPUT_LENGTH = 2000;
 const MIN_INPUT_LENGTH = 1;
-
-// Cache storage
-const memoryCache = new Map<string, { translation: string; timestamp: number }>();
-const memoryCooldowns = new Map<string, number>();
+const MAX_RESPONSE_LENGTH = 5000; // ✅ Add response limit
 
 interface TranslateCustomerQueryInput {
     query: string;
     uid: string;
-}
-
-interface CacheEntry {
-    translation: string;
-    timestamp: number;
 }
 
 // ✅ Unified Cache Manager
@@ -89,6 +81,16 @@ class StorageManager {
             value,
             expiry: Date.now() + exSeconds * 1000,
         });
+    }
+
+    // ✅ Cleanup expired entries
+    cleanup(): void {
+        const now = Date.now();
+        for (const [key, data] of this.memoryStore.entries()) {
+            if (data.expiry <= now) {
+                this.memoryStore.delete(key);
+            }
+        }
     }
 }
 
@@ -203,12 +205,12 @@ function validateInput(text: string): { valid: boolean; error?: string } {
 
 // ✅ Fallback translations
 const FALLBACK_MAP: Record<string, string> = {
-    ငွေထုတ်: "提款 / Withdrawal",
-    ငွေသွင်း: "存款 / Deposit",
-    လက်ကျန်ငွေ: "余额 / Balance",
-    အကောင့်: "账户 / Account",
-    ပြဿနာ: "问题 / Problem",
-    အကူအညီ: "帮助 / Help",
+    ငွေထုတ်: "提款 (Tíkuǎn) / Withdrawal",
+    ငွေသွင်း: "存款 (Cúnkuǎn) / Deposit",
+    လက်ကျန်ငွေ: "余额 (Yúé) / Balance",
+    အကောင့်: "账户 (Zhànghù) / Account",
+    ပြဿနာ: "问题 (Wèntí) / Problem",
+    အကူအညီ: "帮助 (Bāngzhù) / Help",
 };
 
 function getFallbackTranslation(text: string): string | null {
@@ -221,6 +223,35 @@ function getFallbackTranslation(text: string): string | null {
         }
     }
     return null;
+}
+
+// ✅ Response validation
+function validateResponse(response: string): { valid: boolean; cleaned: string } {
+    if (!response || response.trim().length === 0) {
+        return { valid: false, cleaned: "" };
+    }
+
+    const cleaned = response.trim();
+
+    if (cleaned.length > MAX_RESPONSE_LENGTH) {
+        return { valid: false, cleaned: "" };
+    }
+
+    // Check for suspicious patterns in response
+    if (cleaned.includes("Error") || cleaned.includes("error")) {
+        return { valid: false, cleaned: "" };
+    }
+
+    return { valid: true, cleaned };
+}
+
+// ✅ Escape prompt injection
+function escapePromptInput(text: string): string {
+    return text
+        .replace(/\\/g, "\\\\")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, "\\n")
+        .replace(/\r/g, "\\r");
 }
 
 // ✅ Stream helper
@@ -241,7 +272,7 @@ export async function translateCustomerQueryOllama(
     const { query, uid } = input;
 
     if (!query?.trim() || !uid) {
-        return new ReadableStream({ start: (c) => c.close() });
+        return streamFromString("Error: Invalid input");
     }
 
     const sourceText = query.trim();
@@ -259,7 +290,7 @@ export async function translateCustomerQueryOllama(
             const elapsed = (Date.now() - lastTime) / 1000;
             if (elapsed < COOLDOWN_SECONDS) {
                 const remaining = Math.ceil(COOLDOWN_SECONDS - elapsed);
-                return streamFromString(`Error: Wait ${remaining}s before retrying.`);
+                return streamFromString(`Error: Wait ${remaining}s before retrying`);
             }
         }
 
@@ -272,20 +303,32 @@ export async function translateCustomerQueryOllama(
 
         console.log("[Cache] Miss");
 
-        const prompt = `Translate naturally between Burmese and Chinese for customer service.
-Auto-detect source language. Return ONLY the translation.
+        // ✅ Escape user input to prevent prompt injection
+        const escapedText = escapePromptInput(sourceText);
 
-Common Terms:
-• Withdrawal: ငွေထုတ် / 提款
-• Deposit: ငွေသွင်း / 存款
-• Balance: လက်ကျန်ငွေ / 余额
-• Account: အကောင့် / 账户
+        const prompt = `You are an expert bilingual translator for customer service, specializing in natural, high-quality communication between Burmese (Myanmar) and Chinese.
 
-Translate: "${sourceText}"`;
+**Purpose and Goals:**
+* Act as a professional translator to provide a single, polished translation between Burmese and Chinese.
+* Your primary goal is not a literal translation, but the MOST natural, polite, and professional-sounding version suitable for customer service.
+
+**Behaviors and Rules:**
+1. **Auto-Detection:** When you receive text, identify its source language (Burmese or Chinese).
+2. **Translation:** Automatically translate it into the *other* language.
+3. **Prioritize Quality:** Do NOT provide a stiff, word-for-word translation. Your main goal is to choose the version that sounds most fluent and polite.
+4. **Chinese Pinyin (Critical):** If the translation result is Chinese, you MUST include the Pinyin transcription in parentheses after the characters. (e.g., "你好 (Nǐ hǎo)")
+5. **Single Output:** Return ONLY the final, polished translation (with Pinyin, if applicable). Do not include any labels, explanations, or the original text.
+
+**Overall Tone:**
+* Use a polite and professional tone.
+* Ensure the translation is always clear, accurate, and easy to understand.
+
+**Translate the following text:**
+"${escapedText}"`;
 
         const response = await retryWithBackoff(() =>
             ollama.chat({
-                model: "deepseek-v3.1:671b-cloud",
+                model: "gpt-oss:120b-cloud",
                 messages: [{ role: "user", content: prompt }],
                 stream: true,
             })
@@ -305,15 +348,23 @@ Translate: "${sourceText}"`;
                         }
                     }
 
-                    if (fullTranslation) {
+                    // ✅ Validate response
+                    const { valid, cleaned } = validateResponse(fullTranslation);
+                    if (!valid) {
+                        controller.error(new Error("Invalid response from AI"));
+                        return;
+                    }
+
+                    if (cleaned) {
                         await Promise.all([
-                            storage.set(`translation:${sourceText}`, fullTranslation, CACHE_EXPIRY),
+                            storage.set(`translation:${sourceText}`, cleaned, CACHE_EXPIRY),
                             storage.set(`cooldown:${uid}`, Date.now(), COOLDOWN_SECONDS + 1),
                         ]);
                     }
 
                     controller.close();
                 } catch (error) {
+                    console.error("[Stream] Error:", error);
                     controller.error(error);
                 }
             },
@@ -325,6 +376,10 @@ Translate: "${sourceText}"`;
             return streamFromString(fallback);
         }
 
-        return streamFromString(`Error: ${handleApiError(error)}`);
+        const errorMsg = handleApiError(error);
+        return streamFromString(`Error: ${errorMsg}`);
+    } finally {
+        // ✅ Cleanup expired cache entries
+        storage.cleanup();
     }
 }
