@@ -31,17 +31,21 @@ export function Sidebar({
 }: SidebarProps) {
   const [isToolsExpanded, setIsToolsExpanded] = useState(currentMode === "qrcode");
 
-  const handleTranslateClick = () => {
+  const handleTranslateClick = (e: React.MouseEvent) => {
+    e.preventDefault();
     onTranslateClick();
     onMobileClose?.();
   };
 
-  const handleQRCodeClick = () => {
+  const handleQRCodeClick = (e: React.MouseEvent) => {
+    e.preventDefault();
     onQRCodeClick?.();
     onMobileClose?.();
   };
 
-  const toggleTools = () => {
+  const toggleTools = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsToolsExpanded(!isToolsExpanded);
   };
 
@@ -97,47 +101,52 @@ export function Sidebar({
 
         {/* Tools Section (礼物) */}
         <div className="space-y-1">
-          <Button
-            variant="ghost"
+          <button
+            type="button"
             className={cn(
-              "smooth-transition w-full hover:bg-accent/50",
-              isCollapsed ? "justify-center px-2" : "justify-between gap-3"
+              "flex items-center w-full px-4 py-2 rounded-md transition-colors duration-200",
+              "hover:bg-accent/50 text-foreground",
+              isCollapsed ? "justify-center" : "justify-between"
             )}
             onClick={toggleTools}
           >
             <div className={cn("flex items-center", isCollapsed ? "" : "gap-3")}>
               <Gift className="h-5 w-5 flex-shrink-0" />
               {!isCollapsed && (
-                <span className="translate-x-0 transform whitespace-nowrap opacity-100 transition-all duration-500 ease-out">
-                  礼物
-                </span>
+                <span className="text-sm font-medium">礼物</span>
               )}
             </div>
             {!isCollapsed && (
-              isToolsExpanded ? (
-                <ChevronDown className="h-4 w-4 flex-shrink-0" />
-              ) : (
-                <ChevronRight className="h-4 w-4 flex-shrink-0" />
-              )
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 flex-shrink-0 transition-transform duration-200",
+                  isToolsExpanded ? "rotate-180" : "rotate-0"
+                )}
+              />
             )}
-          </Button>
+          </button>
 
           {/* Collapsible Tools Menu */}
-          {isToolsExpanded && !isCollapsed && (
-            <div className="ml-4 space-y-1 animate-in slide-in-from-top-2">
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start gap-3 hover:bg-accent/50 text-sm",
-                  currentMode === "qrcode" && "bg-primary text-primary-foreground"
-                )}
-                onClick={handleQRCodeClick}
-              >
-                <QrCode className="h-4 w-4 flex-shrink-0" />
-                <span>QR Code</span>
-              </Button>
-            </div>
-          )}
+          <div
+            className={cn(
+              "ml-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out",
+              isToolsExpanded && !isCollapsed
+                ? "max-h-40 opacity-100"
+                : "max-h-0 opacity-0"
+            )}
+          >
+            <Button
+              variant="ghost"
+              className={cn(
+                "w-full justify-start gap-3 hover:bg-accent/50 text-sm transition-colors duration-200",
+                currentMode === "qrcode" && "bg-primary text-primary-foreground hover:bg-primary/90"
+              )}
+              onClick={handleQRCodeClick}
+            >
+              <QrCode className="h-4 w-4 flex-shrink-0" />
+              <span>QR Code</span>
+            </Button>
+          </div>
         </div>
       </div>
     </div>

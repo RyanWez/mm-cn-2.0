@@ -1,22 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { QRCodeGenerator } from "@/components/app/qr-code/QRCodeGenerator";
 import { Sidebar } from "@/components/app/sidebar";
 import { Header } from "@/components/app/header";
+import { PageTransition } from "@/components/app/PageTransition";
 import { useRouter } from "next/navigation";
 
 export default function QRCodePage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
   const handleTranslateClick = () => {
-    router.push("/translate");
+    startTransition(() => {
+      router.push("/translate");
+    });
   };
 
   const handleQRCodeClick = () => {
-    router.push("/qrcode");
+    // Already on qrcode page, do nothing
   };
 
   const handleSidebarToggle = (collapsed: boolean) => {
@@ -53,14 +57,16 @@ export default function QRCodePage() {
         />
         
         <main className="flex-1 p-4 sm:p-6 overflow-auto">
-          <div className="max-w-6xl mx-auto">
-            <div className="mb-4 sm:mb-6 text-center">
-              <p className="text-sm sm:text-base lg:text-lg text-muted-foreground">
-                Generate QR codes for URLs, text, or any data.
-              </p>
+          <PageTransition mode="qrcode">
+            <div className="max-w-6xl mx-auto">
+              <div className="mb-4 sm:mb-6 text-center">
+                <p className="text-sm sm:text-base lg:text-lg text-muted-foreground">
+                  Generate QR codes for URLs, text, or any data.
+                </p>
+              </div>
+              <QRCodeGenerator />
             </div>
-            <QRCodeGenerator />
-          </div>
+          </PageTransition>
         </main>
       </div>
     </div>

@@ -1,26 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { Translator } from "@/components/app/translator";
 import { Sidebar } from "@/components/app/sidebar";
 import { Header } from "@/components/app/header";
 import { TranslationHistory } from "@/components/app/translator/TranslationHistory";
+import { PageTransition } from "@/components/app/PageTransition";
 import { useTranslator } from "@/hooks/use-translator";
 import { useRouter } from "next/navigation";
 
 export default function TranslatePage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const router = useRouter();
   
   const { uid, historyRefreshTrigger, handleSelectFromHistory } = useTranslator();
 
   const handleTranslateClick = () => {
-    router.push("/translate");
+    // Already on translate page, do nothing
   };
 
   const handleQRCodeClick = () => {
-    router.push("/qrcode");
+    startTransition(() => {
+      router.push("/qrcode");
+    });
   };
 
   const handleSidebarToggle = (collapsed: boolean) => {
@@ -64,14 +68,16 @@ export default function TranslatePage() {
         />
         
         <main className="flex-1 p-4 sm:p-6 overflow-auto">
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-4 sm:mb-6 text-center">
-              <p className="text-sm sm:text-base lg:text-lg text-muted-foreground">
-                AI-powered translation for customer service chats.
-              </p>
+          <PageTransition mode="translate">
+            <div className="max-w-4xl mx-auto">
+              <div className="mb-4 sm:mb-6 text-center">
+                <p className="text-sm sm:text-base lg:text-lg text-muted-foreground">
+                  AI-powered translation for customer service chats.
+                </p>
+              </div>
+              <Translator />
             </div>
-            <Translator />
-          </div>
+          </PageTransition>
         </main>
       </div>
     </div>
