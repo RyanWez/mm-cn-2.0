@@ -6,7 +6,7 @@ import { InputArea } from "./InputArea";
 import { QRPreview } from "./QRPreview";
 import { LogoSelector } from "./LogoSelector";
 import { ActionButtons } from "./ActionButtons";
-import { DEFAULT_QR_STATE, QRCodeState, QRType, QRLogo, WifiData } from "./types";
+import { DEFAULT_QR_STATE, QRCodeState, QRType, LogoSettings, WifiData } from "./types";
 
 export function QRCodeGenerator() {
   const [state, setState] = useState<QRCodeState>(DEFAULT_QR_STATE);
@@ -60,10 +60,12 @@ export function QRCodeGenerator() {
           {/* QR Code Preview */}
           <QRPreview state={state} qrValue={qrValue} />
 
-          {/* Logo Selection */}
+          {/* Logo Settings */}
           <LogoSelector
-            selectedLogo={state.logo}
-            onLogoChange={(logo: QRLogo) => setState({ ...state, logo })}
+            logoSettings={state.logoSettings}
+            onLogoSettingsChange={(logoSettings: LogoSettings) =>
+              setState({ ...state, logoSettings })
+            }
           />
 
           {/* Action Buttons */}

@@ -103,15 +103,19 @@ export function InputArea({
           </Select>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2 py-2">
           <Checkbox
             id="wifi-hidden"
             checked={wifiData.hidden}
             onCheckedChange={(checked) =>
               onWifiDataChange({ ...wifiData, hidden: checked as boolean })
             }
+            className="h-4 w-4 shrink-0"
           />
-          <Label htmlFor="wifi-hidden" className="text-sm font-normal cursor-pointer">
+          <Label 
+            htmlFor="wifi-hidden" 
+            className="text-sm font-normal cursor-pointer select-none"
+          >
             Hidden network
           </Label>
         </div>

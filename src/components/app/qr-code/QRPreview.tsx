@@ -41,46 +41,81 @@ export function QRPreview({ state, qrValue }: QRPreviewProps) {
         }
 
         // Add logo if selected
-        if (state.logo !== "none") {
-          addLogo(ctx, canvas, state.logo);
+        if (state.logoSettings.logo !== "none") {
+          addLogo(ctx, canvas, state.logoSettings);
         }
       }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qrValue, state.logo]);
+  }, [qrValue, state.logoSettings]);
 
   const addLogo = (
     ctx: CanvasRenderingContext2D,
     canvas: HTMLCanvasElement,
-    logo: string
+    logoSettings: any
   ) => {
-    const logoPath = getLogoPath(logo);
+    const logoPath = getLogoPath(logoSettings.logo);
     if (!logoPath) return;
 
     const img = new window.Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
-      const logoSize = 50; // Optimized size for clarity and scanning
-      const padding = 6;
+      const logoSize = logoSettings.size;
+      const padding = 8;
       const x = (canvas.width - logoSize) / 2;
       const y = (canvas.height - logoSize) / 2;
 
-      // White rounded background for logo
+      // Draw background based on shape
       ctx.fillStyle = "#ffffff";
       ctx.beginPath();
-      ctx.roundRect(x - padding, y - padding, logoSize + padding * 2, logoSize + padding * 2, 8);
+
+      if (logoSettings.shape === "circle") {
+        ctx.arc(
+          x + logoSize / 2,
+          y + logoSize / 2,
+          (logoSize + padding * 2) / 2,
+          0,
+          Math.PI * 2
+        );
+      } else if (logoSettings.shape === "square") {
+        ctx.rect(x - padding, y - padding, logoSize + padding * 2, logoSize + padding * 2);
+      } else {
+        // rounded
+        ctx.roundRect(x - padding, y - padding, logoSize + padding * 2, logoSize + padding * 2, 12);
+      }
       ctx.fill();
 
-      // Optional: Add subtle shadow for depth
-      ctx.shadowColor = "rgba(0, 0, 0, 0.1)";
-      ctx.shadowBlur = 4;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 2;
+      // Add border if enabled
+      if (logoSettings.borderEnabled) {
+        ctx.strokeStyle = logoSettings.borderColor;
+        ctx.lineWidth = logoSettings.borderWidth;
+        ctx.stroke();
+      }
 
-      // Draw logo with better quality
+      // Add subtle shadow for depth
+      ctx.shadowColor = "rgba(0, 0, 0, 0.15)";
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 3;
+
+      // Clip to shape for logo
+      ctx.save();
+      ctx.beginPath();
+      if (logoSettings.shape === "circle") {
+        ctx.arc(x + logoSize / 2, y + logoSize / 2, logoSize / 2, 0, Math.PI * 2);
+      } else if (logoSettings.shape === "square") {
+        ctx.rect(x, y, logoSize, logoSize);
+      } else {
+        ctx.roundRect(x, y, logoSize, logoSize, 8);
+      }
+      ctx.clip();
+
+      // Draw logo with high quality
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
       ctx.drawImage(img, x, y, logoSize, logoSize);
+
+      ctx.restore();
 
       // Reset shadow
       ctx.shadowColor = "transparent";
