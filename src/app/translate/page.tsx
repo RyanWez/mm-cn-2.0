@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { Translator } from "@/components/app/translator";
 import { Sidebar } from "@/components/app/sidebar";
 import { Header } from "@/components/app/header";
@@ -8,6 +8,7 @@ import { TranslationHistory } from "@/components/app/translator/TranslationHisto
 import { PageTransition } from "@/components/app/PageTransition";
 import { useTranslator } from "@/hooks/use-translator";
 import { useRouter } from "next/navigation";
+import { getSidebarCollapsed, setSidebarCollapsed } from "@/lib/storage";
 
 export default function TranslatePage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -16,6 +17,12 @@ export default function TranslatePage() {
   const router = useRouter();
   
   const { uid, historyRefreshTrigger, handleSelectFromHistory } = useTranslator();
+
+  // Restore sidebar state from localStorage on mount
+  useEffect(() => {
+    const savedCollapsed = getSidebarCollapsed();
+    setIsSidebarCollapsed(savedCollapsed);
+  }, []);
 
   const handleTranslateClick = () => {
     // Already on translate page, do nothing
@@ -29,6 +36,7 @@ export default function TranslatePage() {
 
   const handleSidebarToggle = (collapsed: boolean) => {
     setIsSidebarCollapsed(collapsed);
+    setSidebarCollapsed(collapsed);
   };
 
   const handleMobileMenuToggle = () => {

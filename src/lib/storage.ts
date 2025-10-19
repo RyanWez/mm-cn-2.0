@@ -8,7 +8,7 @@ export interface TranslationRecord {
 
 const HISTORY_KEY = "translation_history";
 const CACHE_KEY = "translation_cache";
-const MAX_HISTORY_ITEMS = 20;
+const MAX_HISTORY_ITEMS = 30;
 
 // Get user ID from localStorage or create a new one
 export const getUserId = (): string => {
@@ -167,5 +167,29 @@ export const deleteTranslationHistory = (id: string): void => {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(filtered));
   } catch (error) {
     console.error("Error deleting translation history:", error);
+  }
+};
+
+// Sidebar state management
+const SIDEBAR_COLLAPSED_KEY = "sidebar_collapsed";
+
+export const getSidebarCollapsed = (): boolean => {
+  if (typeof window === "undefined") return false;
+
+  try {
+    const collapsed = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    return collapsed === "true";
+  } catch (error) {
+    return false;
+  }
+};
+
+export const setSidebarCollapsed = (collapsed: boolean): void => {
+  if (typeof window === "undefined") return;
+
+  try {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed.toString());
+  } catch (error) {
+    console.error("Error saving sidebar state:", error);
   }
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Languages, Gift, QrCode, ChevronDown, ChevronRight } from "lucide-react";
+import { Languages, Gift, QrCode, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -9,6 +9,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
@@ -101,52 +106,90 @@ export function Sidebar({
 
         {/* Tools Section (礼物) */}
         <div className="space-y-1">
-          <button
-            type="button"
-            className={cn(
-              "flex items-center w-full px-4 py-2 rounded-md transition-colors duration-200",
-              "hover:bg-accent/50 text-foreground",
-              isCollapsed ? "justify-center" : "justify-between"
-            )}
-            onClick={toggleTools}
-          >
-            <div className={cn("flex items-center", isCollapsed ? "" : "gap-3")}>
-              <Gift className="h-5 w-5 flex-shrink-0" />
-              {!isCollapsed && (
-                <span className="text-sm font-medium">礼物</span>
-              )}
-            </div>
-            {!isCollapsed && (
-              <ChevronDown
+          {isCollapsed ? (
+            // Collapsed state: Show popover
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className={cn(
+                    "flex items-center w-full px-4 py-2 rounded-md transition-all duration-200",
+                    "hover:bg-accent/50 text-foreground justify-center"
+                  )}
+                >
+                  <Gift className="h-5 w-5 flex-shrink-0" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent 
+                side="right" 
+                align="center" 
+                sideOffset={16}
+                className="w-48 p-2 animate-in fade-in-0 zoom-in-95 slide-in-from-left-2 duration-200"
+              >
+                <div className="space-y-1">
+                  <div className="px-2 py-1.5 text-sm font-medium text-foreground">
+                    礼物
+                  </div>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start gap-3 hover:bg-accent/50 text-sm transition-all duration-200",
+                      currentMode === "qrcode" && "bg-primary text-primary-foreground hover:bg-primary/90"
+                    )}
+                    onClick={handleQRCodeClick}
+                  >
+                    <QrCode className="h-4 w-4 flex-shrink-0" />
+                    <span>QR Code</span>
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          ) : (
+            // Expanded state: Show collapsible menu
+            <>
+              <button
+                type="button"
                 className={cn(
-                  "h-4 w-4 flex-shrink-0 transition-transform duration-200",
-                  isToolsExpanded ? "rotate-180" : "rotate-0"
+                  "flex items-center w-full px-4 py-2 rounded-md transition-colors duration-200",
+                  "hover:bg-accent/50 text-foreground justify-between"
                 )}
-              />
-            )}
-          </button>
+                onClick={toggleTools}
+              >
+                <div className="flex items-center gap-3">
+                  <Gift className="h-5 w-5 flex-shrink-0" />
+                  <span className="text-sm font-medium">礼物</span>
+                </div>
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 flex-shrink-0 transition-transform duration-200",
+                    isToolsExpanded ? "rotate-180" : "rotate-0"
+                  )}
+                />
+              </button>
 
-          {/* Collapsible Tools Menu */}
-          <div
-            className={cn(
-              "ml-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out",
-              isToolsExpanded && !isCollapsed
-                ? "max-h-40 opacity-100"
-                : "max-h-0 opacity-0"
-            )}
-          >
-            <Button
-              variant="ghost"
-              className={cn(
-                "w-full justify-start gap-3 hover:bg-accent/50 text-sm transition-colors duration-200",
-                currentMode === "qrcode" && "bg-primary text-primary-foreground hover:bg-primary/90"
-              )}
-              onClick={handleQRCodeClick}
-            >
-              <QrCode className="h-4 w-4 flex-shrink-0" />
-              <span>QR Code</span>
-            </Button>
-          </div>
+              {/* Collapsible Tools Menu */}
+              <div
+                className={cn(
+                  "ml-4 space-y-1 overflow-hidden transition-all duration-300 ease-in-out",
+                  isToolsExpanded
+                    ? "max-h-40 opacity-100"
+                    : "max-h-0 opacity-0"
+                )}
+              >
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-start gap-3 hover:bg-accent/50 text-sm transition-colors duration-200",
+                    currentMode === "qrcode" && "bg-primary text-primary-foreground hover:bg-primary/90"
+                  )}
+                  onClick={handleQRCodeClick}
+                >
+                  <QrCode className="h-4 w-4 flex-shrink-0" />
+                  <span>QR Code</span>
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

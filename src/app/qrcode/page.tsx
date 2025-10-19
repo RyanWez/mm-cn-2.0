@@ -1,17 +1,24 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { QRCodeGenerator } from "@/components/app/qr-code/QRCodeGenerator";
 import { Sidebar } from "@/components/app/sidebar";
 import { Header } from "@/components/app/header";
 import { PageTransition } from "@/components/app/PageTransition";
 import { useRouter } from "next/navigation";
+import { getSidebarCollapsed, setSidebarCollapsed } from "@/lib/storage";
 
 export default function QRCodePage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
+
+  // Restore sidebar state from localStorage on mount
+  useEffect(() => {
+    const savedCollapsed = getSidebarCollapsed();
+    setIsSidebarCollapsed(savedCollapsed);
+  }, []);
 
   const handleTranslateClick = () => {
     startTransition(() => {
@@ -25,6 +32,7 @@ export default function QRCodePage() {
 
   const handleSidebarToggle = (collapsed: boolean) => {
     setIsSidebarCollapsed(collapsed);
+    setSidebarCollapsed(collapsed);
   };
 
   const handleMobileMenuToggle = () => {
