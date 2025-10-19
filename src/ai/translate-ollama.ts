@@ -22,7 +22,7 @@ const CACHE_EXPIRY = 24 * 60 * 60; // seconds
 const COOLDOWN_SECONDS = 5;
 const MAX_INPUT_LENGTH = 2000;
 const MIN_INPUT_LENGTH = 1;
-const MAX_RESPONSE_LENGTH = 5000; // ✅ Add response limit
+const MAX_RESPONSE_LENGTH = 5000;
 
 interface TranslateCustomerQueryInput {
     query: string;
@@ -203,14 +203,14 @@ function validateInput(text: string): { valid: boolean; error?: string } {
     return { valid: true };
 }
 
-// ✅ Fallback translations
+// ✅ Fallback translations (Pinyin ဖြုတ်ထားတယ်)
 const FALLBACK_MAP: Record<string, string> = {
-    ငွေထုတ်: "提款 (Tíkuǎn) / Withdrawal",
-    ငွေသွင်း: "存款 (Cúnkuǎn) / Deposit",
-    လက်ကျန်ငွေ: "余额 (Yúé) / Balance",
-    အကောင့်: "账户 (Zhànghù) / Account",
-    ပြဿနာ: "问题 (Wèntí) / Problem",
-    အကူအညီ: "帮助 (Bāngzhù) / Help",
+    ငွေထုတ်: "提款 / Withdrawal",
+    ငွေသွင်း: "存款 / Deposit",
+    လက်ကျန်ငွေ: "余额 / Balance",
+    အကောင့်: "账户 / Account",
+    ပြဿနာ: "问题 / Problem",
+    အကူအညီ: "帮助 / Help",
 };
 
 function getFallbackTranslation(text: string): string | null {
@@ -308,27 +308,26 @@ export async function translateCustomerQueryOllama(
 
         const prompt = `You are an expert bilingual translator for customer service, specializing in natural, high-quality communication between Burmese (Myanmar) and Chinese.
 
-**Purpose and Goals:**
-* Act as a professional translator to provide a single, polished translation between Burmese and Chinese.
-* Your primary goal is not a literal translation, but the MOST natural, polite, and professional-sounding version suitable for customer service.
+            **Purpose and Goals:**
+            * Act as a professional translator to provide a single, polished translation between Burmese and Chinese.
+            * Your primary goal is not a literal translation, but the MOST natural, polite, and professional-sounding version suitable for customer service.
 
-**Behaviors and Rules:**
-1. **Auto-Detection:** When you receive text, identify its source language (Burmese or Chinese).
-2. **Translation:** Automatically translate it into the *other* language.
-3. **Prioritize Quality:** Do NOT provide a stiff, word-for-word translation. Your main goal is to choose the version that sounds most fluent and polite.
-4. **Chinese Pinyin (Critical):** If the translation result is Chinese, you MUST include the Pinyin transcription in parentheses after the characters. (e.g., "你好 (Nǐ hǎo)")
-5. **Single Output:** Return ONLY the final, polished translation (with Pinyin, if applicable). Do not include any labels, explanations, or the original text.
+            **Behaviors and Rules:**
+            1. **Auto-Detection:** When you receive text, identify its source language (Burmese or Chinese).
+            2. **Translation:** Automatically translate it into the *other* language.
+            3. **Prioritize Quality:** Do NOT provide a stiff, word-for-word translation. Your main goal is to choose the version that sounds most fluent and polite.
+            4. **Single Output:** Return ONLY the final, polished translation. Do not include any labels, explanations, or the original text.
 
-**Overall Tone:**
-* Use a polite and professional tone.
-* Ensure the translation is always clear, accurate, and easy to understand.
+            **Overall Tone:**
+            * Use a polite and professional tone.
+            * Ensure the translation is always clear, accurate, and easy to understand.
 
-**Translate the following text:**
-"${escapedText}"`;
+            **Translate the following text:**
+            "${escapedText}"`;
 
         const response = await retryWithBackoff(() =>
             ollama.chat({
-                model: "gpt-oss:120b-cloud",
+                model: "deepseek-v3.1:671b-cloud",
                 messages: [{ role: "user", content: prompt }],
                 stream: true,
             })
