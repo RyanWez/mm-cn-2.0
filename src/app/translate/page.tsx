@@ -1,0 +1,79 @@
+"use client";
+
+import { useState } from "react";
+import { Translator } from "@/components/app/translator";
+import { Sidebar } from "@/components/app/sidebar";
+import { Header } from "@/components/app/header";
+import { TranslationHistory } from "@/components/app/translator/TranslationHistory";
+import { useTranslator } from "@/hooks/use-translator";
+import { useRouter } from "next/navigation";
+
+export default function TranslatePage() {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const router = useRouter();
+  
+  const { uid, historyRefreshTrigger, handleSelectFromHistory } = useTranslator();
+
+  const handleTranslateClick = () => {
+    router.push("/translate");
+  };
+
+  const handleQRCodeClick = () => {
+    router.push("/qrcode");
+  };
+
+  const handleSidebarToggle = (collapsed: boolean) => {
+    setIsSidebarCollapsed(collapsed);
+  };
+
+  const handleMobileMenuToggle = () => {
+    setIsMobileSidebarOpen(!isMobileSidebarOpen);
+  };
+
+  const handleMobileSidebarClose = () => {
+    setIsMobileSidebarOpen(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <Sidebar
+        onTranslateClick={handleTranslateClick}
+        onQRCodeClick={handleQRCodeClick}
+        currentMode="translate"
+        isCollapsed={isSidebarCollapsed}
+        isMobileOpen={isMobileSidebarOpen}
+        onMobileClose={handleMobileSidebarClose}
+      />
+      
+      <div className={`flex flex-col min-h-screen transition-all duration-300 ease-in-out ${
+        isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      }`}>
+        <Header 
+          isCollapsed={isSidebarCollapsed} 
+          onToggle={handleSidebarToggle}
+          onMobileMenuToggle={handleMobileMenuToggle}
+          mode="translate"
+          rightContent={
+            <TranslationHistory
+              uid={uid}
+              onSelectTranslation={handleSelectFromHistory}
+              refreshTrigger={historyRefreshTrigger}
+            />
+          }
+        />
+        
+        <main className="flex-1 p-4 sm:p-6 overflow-auto">
+          <div className="max-w-4xl mx-auto">
+            <div className="mb-4 sm:mb-6 text-center">
+              <p className="text-sm sm:text-base lg:text-lg text-muted-foreground">
+                AI-powered translation for customer service chats.
+              </p>
+            </div>
+            <Translator />
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}

@@ -15,6 +15,7 @@ import Image from "next/image";
 interface SidebarProps {
   onTranslateClick: () => void;
   onQRCodeClick?: () => void;
+  currentMode?: "translate" | "qrcode";
   isCollapsed: boolean;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
@@ -23,11 +24,12 @@ interface SidebarProps {
 export function Sidebar({
   onTranslateClick,
   onQRCodeClick,
+  currentMode = "translate",
   isCollapsed,
   isMobileOpen = false,
   onMobileClose,
 }: SidebarProps) {
-  const [isToolsExpanded, setIsToolsExpanded] = useState(false);
+  const [isToolsExpanded, setIsToolsExpanded] = useState(currentMode === "qrcode");
 
   const handleTranslateClick = () => {
     onTranslateClick();
@@ -79,7 +81,8 @@ export function Sidebar({
         <Button
           variant="ghost"
           className={cn(
-            "smooth-transition w-full bg-accent/80 font-semibold hover:bg-accent hover:bg-accent/50",
+            "smooth-transition w-full font-semibold hover:bg-accent hover:bg-accent/50",
+            currentMode === "translate" ? "bg-primary text-primary-foreground" : "bg-accent/80",
             isCollapsed ? "justify-center px-2" : "justify-start gap-3"
           )}
           onClick={handleTranslateClick}
@@ -124,7 +127,10 @@ export function Sidebar({
             <div className="ml-4 space-y-1 animate-in slide-in-from-top-2">
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-3 hover:bg-accent/50 text-sm"
+                className={cn(
+                  "w-full justify-start gap-3 hover:bg-accent/50 text-sm",
+                  currentMode === "qrcode" && "bg-primary text-primary-foreground"
+                )}
                 onClick={handleQRCodeClick}
               >
                 <QrCode className="h-4 w-4 flex-shrink-0" />
